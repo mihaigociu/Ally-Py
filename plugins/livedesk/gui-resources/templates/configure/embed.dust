@@ -1,0 +1,16 @@
+<div id="livedesk-root"></div>
+<script type="text/javascript">
+var livedesk = {
+	'server': function(){ return "{ApiUrl}"; },
+	{?Language}
+	'language': '{Language}',
+	{/Language}
+	'blog': '{TheBlog}',
+	'FrontendServer': '{FrontendServer}'
+};
+</script>
+<script type="text/javascript" src="{GuiLivedeskEmbed}"></script>
+<script type="text/javascript">
+    requirejs.config({baseUrl: "{ThemePath}"});
+    require(["{Theme}"]);
+</script>

@@ -6,6 +6,9 @@ Subpackages
 
 .. toctree::
 
+<<<<<<< HEAD
     gui-resources.scripts.build
+=======
+>>>>>>> 11f8e87585314aa98dcb9952577b77b52e134c35
     gui-resources.scripts.js
 

@@ -2,8 +2,19 @@
 
 python_cli=python3
 
+<<<<<<< HEAD
 dirs="components plugins superdesk/plugins"
+=======
+ally_py_dir=..
+
+dirs="$ally_py_dir/components $ally_py_dir/plugins plugins"
+>>>>>>> 11f8e87585314aa98dcb9952577b77b52e134c35
 
 export PYTHONPATH=distribution/tools/distribute-0.6.27-py3.2.egg
 
 for dir in $dirs; do $python_cli "$dir/build_egg.py"; done
+<<<<<<< HEAD
+=======
+
+$python_cli "plugins/copy_eggs.py"
+>>>>>>> 11f8e87585314aa98dcb9952577b77b52e134c35

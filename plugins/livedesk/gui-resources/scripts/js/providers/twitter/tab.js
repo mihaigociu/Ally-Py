@@ -1,0 +1,1 @@
+define(['providers'], function(providers) {	providers.twitter = {		className: 'big-icon-twitter',			tooltip: _('Twitter'),		init: function() {							require(['providers','providers/twitter'], function(providers) {				providers.twitter.init();			});		}	};	return providers;});

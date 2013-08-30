@@ -1,5 +1,8 @@
 /distribution/app.log
+<<<<<<< HEAD
 /distribution/.settings/org.eclipse.core.resources.prefs
+=======
+>>>>>>> 11f8e87585314aa98dcb9952577b77b52e134c35
 /distribution/test.py
 /distribution/plugins.properties.bck
 /distribution/application.properties.bck
@@ -8,9 +11,17 @@
 /distribution/workspace/
 /distribution/components
 /distribution/plugins
+<<<<<<< HEAD
 
 *.pyo
 *.pyc
+=======
+/airtime/distribution/workspace/
+
+*.pyc
+/distribution/components/*.egg
+/distribution/plugins/*.egg
+>>>>>>> 11f8e87585314aa98dcb9952577b77b52e134c35
 *.properties
 *.properties.bak
 
@@ -18,6 +29,9 @@
 .pydevproject
 /.metadata/
 
+<<<<<<< HEAD
 /superdesk/
 
+=======
+>>>>>>> 11f8e87585314aa98dcb9952577b77b52e134c35
 *.egg-info/

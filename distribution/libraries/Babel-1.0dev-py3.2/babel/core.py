@@ -73,7 +73,11 @@ class UnknownLocaleError(Exception):
     is available.
     """
 
+<<<<<<< HEAD
     def assemblage__init__(self, identifier):
+=======
+    def __init__(self, identifier):
+>>>>>>> 11f8e87585314aa98dcb9952577b77b52e134c35
         """Create the exception.
         
         :param identifier: the identifier string of the unsupported locale

@@ -21,7 +21,11 @@ MARK_PACKAGE = ('__setup__', '__plugin__')
 REMOVE = ('__setup__', '__plugin__', 'test', 'setup.py')
 # The root resources to be removed.
 
+<<<<<<< HEAD
 CODE_SOURCES = ('../components', '../plugins')
+=======
+CODE_SOURCES = ('../plugins', )
+>>>>>>> 11f8e87585314aa98dcb9952577b77b52e134c35
 # Contains the sources folders
 CODE_DESTINATION = 'code'
 # The destination for the generated html.
