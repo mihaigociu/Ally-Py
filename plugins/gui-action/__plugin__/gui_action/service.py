@@ -9,13 +9,18 @@ Created on Feb 23, 2012
 Provides the services setup.
 '''
 
-from ally.container import support
-from gui.action.api.action import IActionManagerService
+from ..plugin.registry import registerService
+from .database import binders
+from ally.container import support, bind
 
 # --------------------------------------------------------------------
 
-def addAction(action):
-    '''
-    Add a new action.
-    '''
-    support.entityFor(IActionManagerService).add(action)
+SERVICES = 'gui.action.api.**.I*Service'
+
+bind.bindToEntities('gui.action.impl.**.*Alchemy', binders=binders)
+support.createEntitySetup('gui.action.impl.**.*')
+support.listenToEntities(SERVICES, listeners=registerService, beforeBinding=False)
+support.loadAllEntities(SERVICES)
+
+# --------------------------------------------------------------------
+

@@ -9,22 +9,15 @@ Created on Jul 18, 2013
 Provides definition specifications. 
 '''
 
+from ally.support.util_context import IPrepare
 import abc
 
 # --------------------------------------------------------------------
 
-class IVerifier(metaclass=abc.ABCMeta):
+class IVerifier(IPrepare):
     '''
     Description verifier for definition specification.
     '''
-    
-    def prepare(self, resolvers):
-        '''
-        Prepare the resolvers contexts for the verification.
-        
-        @param resolvers: dictionary{string, IResolver}
-            The resolvers to prepare.
-        '''
     
     @abc.abstractmethod
     def isValid(self, definition):

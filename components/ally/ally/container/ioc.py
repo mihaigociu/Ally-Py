@@ -203,8 +203,11 @@ def initialize(entity):
     
     @param entity: object
         The entity to initialize.
+    @return: object
+        The provided entity after initialize.
     '''
     if entity is not None: Initializer.initialize(entity)
+    return entity
 
 def entityOf(identifier, module=None):
     '''

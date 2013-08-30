@@ -14,7 +14,7 @@ from xml.sax import make_parser
 from xml.sax.xmlreader import InputSource
 from xml.sax._exceptions import SAXParseException
 from xml.sax.saxutils import XMLGenerator
-from collections import deque
+from collections import Iterable
 
 # --------------------------------------------------------------------
 
@@ -101,7 +101,7 @@ class Digester(ContentHandler):
         '''
         Provides the current processing path of the digester.
         '''
-        elements = deque()
+        elements = []
         for i in range(1, len(self._nodes)):
             node = self._nodes[i]
             if isinstance(node, Node): elements.append(node.name)
@@ -322,7 +322,7 @@ class Node:
         self.name = name
         self.rules = []
         self.childrens = {}
-
+        
     def addRule(self, rule, *xpaths):
         '''
         Add a rule to this node.
@@ -335,7 +335,7 @@ class Node:
             The node of the added rule.
         '''
         assert isinstance(rule, Rule), 'Invalid rule %s' % rule
-        paths = deque()
+        paths = []
         for path in xpaths:
             assert isinstance(path, str), 'Invalid path element %s' % path
             paths.extend(path.split('/'))
@@ -347,14 +347,16 @@ class Node:
         '''
         Obtains the node for the specified xpaths list.
         
-        @param xpaths: deque(string)
-            The xpaths list to be searched.
+        @param xpaths: Iterable(string)|string
+            The xpaths to be searched.
+        @return: Node
+            The node for the xpath.
         '''
-        assert isinstance(xpaths, deque), 'Invalid xpaths %s' % xpaths
+        if isinstance(xpaths, str): xpaths = xpaths.split('/')
+        assert isinstance(xpaths, Iterable), 'Invalid xpaths %s' % xpaths
 
         node = self
-        while xpaths:
-            xpath = xpaths.popleft()
+        for xpath in xpaths:
             for path, child in node.childrens.items():
                 if path == xpath:
                     node = child

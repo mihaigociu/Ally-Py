@@ -11,65 +11,58 @@ Action Manager Implementation
 
 from ally.container.ioc import injected
 from ally.container.support import setup
-from ally.support.api.util_service import copy
-from gui.action.api.action import IActionManagerService, Action
-import re
+from gui.action.api.action import Action, IActionManagerService
+from sql_alchemy.impl.entity import EntityNQServiceAlchemy, EntitySupportAlchemy
+from sqlalchemy.exc import SQLAlchemyError
+from ally.support.sqlalchemy.util_service import iterateCollection, insertModel
+from gui.action.meta.action import ActionMapped
 
 # --------------------------------------------------------------------
 
 @injected
 @setup(IActionManagerService, name='actionManager')
-class ActionManagerService(IActionManagerService):
+class ActionManagerServiceAlchemy(EntityNQServiceAlchemy, IActionManagerService):
     '''
     @see: IActionManagerService
     '''
 
     def __init__(self):
-        '''  '''
-        self._actions = {}
-    
-    def add(self, action):
+        EntitySupportAlchemy.__init__(self, ActionMapped)
+
+    def getChildren(self, path, **options):
         '''
-        @see: IActionManagerService.add
+        @see: IActionManagerService.getChildren
+        '''
+        assert isinstance(path, str), 'Invalid path %s' % path
+        sql = self.session().query(ActionMapped.Path).filter(ActionMapped.Path.like('%s.%' % path))
+        return iterateCollection(sql, **options)
+    
+    def insert(self, action):
+        '''
+        @see IActionManagerService.insert
         '''
         assert isinstance(action, Action), 'Invalid action %s' % action
-        self._actions[action.Path] = action
+        insertModel(ActionMapped, action)
+        
+        path = action.Path
+        while '.' in path:
+            path = path[:path.rfind('.')]
+            if self.session().query(ActionMapped.Path).filter(ActionMapped.Path == path).count(): break
+            insertModel(ActionMapped, Action(Path=path))
+                
         return action.Path
         
-    def getAll(self, path, origPath=None):
+    def delete(self, path):
         '''
-        @see: IActionManagerService.getAll
+        @see IActionManagerService.delete
         '''
-        actions = self._actions.values()
-        if path:
-            # match exact path, passed between " (double quotes)
-            if re.match('".+"', path): 
-                actions = [action for action in actions if action.Path == path.strip('"')]
-            # match a word placeholder *
-            elif path.find('*') != -1:
-                p = '^' + re.sub(r'\\\*', '(\d|\w|-|_)+', re.escape(path)) + '$'
-                actions = [action for action in actions if re.match(p, action.Path)]
-            # normal match, paths starting with path string
-            else: 
-                actions = [action for action in actions if action.Path.startswith(path.rstrip('.'))]
-                
-        return processChildCount(actions)
-
-# --------------------------------------------------------------------
-
-# TODO: this will get removed after the super x-filter implementation.
-def processChildCount(actions):
-    '''
-    Process the child count for the provided actions list.
-    '''
-    actions = sorted(actions, key=lambda action: action.Path)
-    for k, action in enumerate(actions):
-        actionWithCount = Action()
-        copy(action, actionWithCount, exclude=('ChildrenCount',))
-        childCount, path = 0, action.Path + '.'
-        for i in range(k + 1, len(actions)):
-            if actions[i].Path.startswith(path): childCount += 1
-            else: break
-        actionWithCount.ChildrenCount = childCount
-        yield actionWithCount
+        assert isinstance(path, str), 'Invalid path %s' % path
         
+        sql = self.session().query(ActionMapped)
+        sql = sql.filter(ActionMapped.Path.like('{0}.%'.format(path)) | (ActionMapped.Path == path))
+        hasDeleted = False
+        for action in sql.all():
+            self.session().delete(action)
+            hasDeleted = True
+        return hasDeleted
+    

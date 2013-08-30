@@ -9,16 +9,17 @@ Created on Feb 27, 2012
 Action manager interface and action model 
 '''
 
-from ally.api.config import service, call, INSERT
+from ally.api.config import service, call
+from ally.api.option import SliceAndTotal #@UnusedImport
 from ally.api.type import Iter, Reference
+from ally.support.api.entity import IEntityNQPrototype
 from gui.api.domain_gui import modelGui
-import re
 
 # --------------------------------------------------------------------
 # TODO: we need to fix the action object since it has a child count which is dependent on list structure
 # we can latter on use the x-filter to actually request the inner children of an action in the form of *.ActionChildren
 # this will mean to fetch recursive all the action children, this is how will end up having a tree of actions.
-@modelGui(id='Path')
+@modelGui(id='Path', name='GUIACTION')
 class Action:
     '''
     The object used to create and group actions 
@@ -27,35 +28,22 @@ class Action:
     Label = str  # display label
     Script = Reference  # UI script path
     NavBar = str  # href to use for ui controls
-    ChildrenCount = int
-
-    def __init__(self, Path=None, Label=None, Parent=None, Script=None, NavBar=None):
-        self.ChildrenCount = 0
-        if Path: self.Path = re.compile('[^\w\-\.]', re.ASCII).sub('', Path)
-        if Parent:
-            assert isinstance(Parent, Action), 'Invalid Parent object %s' % Parent
-            assert isinstance(Path, str), 'A path is required if Parent is provided %s' % Path
-            self.Path = Parent.Path + '.' + self.Path
-        if Label: self.Label = Label
-        if Script: self.Script = Script
-        if NavBar: self.NavBar = NavBar
+    
+    def __init__(self, Path=None):
+        if Path is not None:
+            assert isinstance(Path, str), 'Invalid path %s' % Path
+            self.Path = Path
 
 # --------------------------------------------------------------------
 
-@service
-class IActionManagerService:
+@service(('Entity', Action))
+class IActionManagerService(IEntityNQPrototype):
     '''
     Provides a container and manager for actions
     '''
-
-    @call(method=INSERT)
-    def add(self, action:Action) -> Action.Path:
-        '''
-        Register an action here
-        '''
-
+    
     @call
-    def getAll(self, path:str=None, origPath:str=None) -> Iter(Action):
+    def getChildren(self, path:Action.Path, **options:SliceAndTotal) -> Iter(Action.Path):
         '''
         Get all actions registered
         '''

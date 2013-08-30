@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Config>
+	<Anonymous>
+		<Action path="menu" label="Menu">
+			<Action path="request" label="Request" >
+				<Action path="blob" label="Blob" />
+			</Action>				
+		</Action>
+		<Action path="mucu" label="Mucu" parent="menu" />
+		<Action path="cucu" label="Mucu" parent="menu" /
+
+		<Access methods="PUT,DELETE" filter="FilterDummy, Authent, lala">
+			<Method>GET</Method>
+			<URL>User/*</URL>
+			<URL>User/*/Blog</URL>
+			<URL>User/#/SubUser/*</URL>
+		</Access>
+		
+		<Access filter="userAuth">
+			<Method>GET</Method>
+			<URL>User/*</URL>
+			<URL>User/*/Blog</URL>
+			<URL>User/#/SubUser/*</URL>
+		</Access>
+	</Anonymous>
+
+	<Captcha>
+		<Access methods="GET" filter="userAuth">
+			<URL>User/*</URL>
+			<URL>User/*/Blog</URL>
+			<URL>User/#/SubUser/*</URL>
+		</Access>
+		<Access methods="PUT" filter="userAuth">
+			<URL>User/*</URL>
+		</Access>
+	</Captcha>
+
+	<Right name="Requests inspection">
+		<Actions>
+			<Action path="menu_2" />
+			<Action path="menu_2.request" script="/js/aaa.js">Request</Action>
+		</Actions>
+		<Action path="menu_3" label="Menu">
+			<Action path="request" label="Request" />
+		</Action>
+		<Action path="mucu" label="Mucu" parent="menu_2" />
+
+		<Access filter="userAuth">
+			<Method>GET</Method>
+			<URL>User/*</URL>
+			<URL>User/*/Blog</URL>
+			<URL>User/#/SubUser/*</URL>
+		</Access>
+
+		<Description>Allows for the viewing of all possible requests that can be made on the REST server, also the plugins and
+			components that are part of the
+			application are also visible.
+		</Description>
+	</Right>
+
+</Config>

@@ -13,6 +13,23 @@ from .util import Singletone
 from ally.design.processor.context import Context, Object, attributeOf
 from ally.design.processor.spec import ContextMetaClass, IAttribute, IResolver
 from collections import Iterable
+import abc
+
+# --------------------------------------------------------------------
+
+class IPrepare(metaclass=abc.ABCMeta):
+    '''
+    Specification for classes that perform different actions that require context classes. 
+    '''
+    
+    @abc.abstractmethod
+    def prepare(self, resolvers):
+        '''
+        Prepare the resolvers contexts.
+        
+        @param resolvers: dictionary{string, IResolver}
+            The resolvers to prepare.
+        '''
 
 # --------------------------------------------------------------------
 
