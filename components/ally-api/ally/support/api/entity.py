@@ -91,7 +91,7 @@ class IEntityCRUDPrototype(metaclass=abc.ABCMeta):
         '''
 
     @prototype
-    def delete(self, ididentifier:lambda p:p.Entity) -> bool:
+    def delete(self, identifier:lambda p:p.Entity) -> bool:
         '''
         Delete the entity for the provided identifier.
         

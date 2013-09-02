@@ -9,8 +9,7 @@ Created on Jun 5, 2013
 Provides the validation for call and model hints.
 '''
 
-from ally.api.operator.type import TypeModel
-from ally.api.type import Call
+from ally.api.operator.type import TypeModel, TypeCall
 from ally.design.processor.attribute import requires
 from ally.design.processor.context import Context
 from ally.design.processor.handler import HandlerProcessor
@@ -35,7 +34,7 @@ class Invoker(Context):
     The invoker context.
     '''
     # ---------------------------------------------------------------- Required
-    call = requires(Call)
+    call = requires(TypeCall)
     location = requires(str)
     
 # --------------------------------------------------------------------
@@ -66,7 +65,7 @@ class ValidateHintsHandler(HandlerProcessor):
             for invoker in register.invokers:
                 assert isinstance(invoker, Invoker), 'Invalid invoker %s' % invoker
                 if not invoker.call: continue
-                assert isinstance(invoker.call, Call), 'Invalid call %s' % invoker.call
+                assert isinstance(invoker.call, TypeCall), 'Invalid call %s' % invoker.call
                 
                 unknown = []
                 for hname in invoker.call.hints:

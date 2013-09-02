@@ -6,127 +6,53 @@ Created on Dec 21, 2012
 @license: http://www.gnu.org/licenses/gpl-3.0.txt
 @author: Ioan v. Pocol
 
-SQL Alchemy based implementation for the rbac API.
+RBAC implementation for roles.
 '''
 
-from ..spec import IRbacService
-from ally.container.ioc import injected
+from ..api.role import QRole
+from ..core.impl.rbac import RbacServiceAlchemy, Child, Parent
+from ..meta.rbac_intern import RoleNode
+from ..meta.role import RoleMapped
 from ally.container.support import setup
-from ally.support.sqlalchemy.mapper import InsertFromSelect, tableFor
-from ally.support.sqlalchemy.session import SessionSupport
-from security.meta.right import RightMapped
-from security.rbac.meta.rbac import RbacMapped, RoleMapped
-from security.rbac.meta.rbac_intern import RoleNode, RbacRight, RbacRole
+from security.rbac.api.role_rbac import IRoleRbacService
+from security.rbac.meta.rbac_intern import RbacRole
+from sql_alchemy.impl.entity import EntityServiceAlchemy
+from sql_alchemy.support.mapper import InsertFromSelect, tableFor
+from sql_alchemy.support.util_service import insertModel
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.orm.util import aliased
 from sqlalchemy.sql.expression import and_, select
 
 # --------------------------------------------------------------------
 
-@injected
-@setup(IRbacService, name='rbacService')
-class RbacServiceAlchemy(SessionSupport, IRbacService):
+@setup(IRoleRbacService, name='roleService')
+class RoleServiceAlchemy(EntityServiceAlchemy, RbacServiceAlchemy, IRoleRbacService):
     '''
-    Implementation for @see: IRbacService
+    Implementation for @see: IRoleRbacService
     '''
-
+    
     def __init__(self):
+        EntityServiceAlchemy.__init__(self, RoleMapped, QRole)
+        RbacServiceAlchemy.__init__(self, RoleMapped)
+        
+        self._rootId = None
+
+    def insert(self, entity):
         '''
-        Construct the rbac service implementation.
+        @see: IRoleRbacService.insert
         '''
-        self._idRoot = None
-
-    def rightsForRbacSQL(self, rbacId, sql=None):
-        '''
-        @see: IRbacService.rightsForRbacSQL
-        '''
-        child, parent = aliased(RoleNode), aliased(RoleNode)
-
-        subq = sql or self.session().query(RightMapped)
-        subq = subq.join(RbacRight, RbacRight.right == RightMapped.Id)
-        subq = subq.join(child, child.role == RbacRight.rbac)
-        subq = subq.join(parent, and_(child.left >= parent.left, child.right <= parent.right))
-        subq = subq.join(RbacRole, and_(RbacRole.role == parent.role, RbacRole.rbac == rbacId))
-
-        sql = sql or self.session().query(RightMapped)
-        sql = sql.join(RbacRight, and_(RbacRight.right == RightMapped.Id, RbacRight.rbac == rbacId))
-
-        sql = sql.union(subq).distinct(RightMapped.Id).order_by(RightMapped.Id)
-
-
-        return sql
-
-    def rolesForRbacSQL(self, rbacId, sql=None):
-        '''
-        @see: IRbacService.rolesForRbacSQL
-        '''
-        child, parent = aliased(RoleNode), aliased(RoleNode)
-
-        sql = sql or self.session().query(RoleMapped)
-        sql = sql.join(child, child.role == RoleMapped.Id)
-        sql = sql.join(parent, and_(child.left >= parent.left, child.right <= parent.right))
-        sql = sql.join(RbacRole, and_(RbacRole.role == parent.role, RbacRole.rbac == rbacId))
-
-        return sql
-
-    def rbacsForRightSQL(self, rightId, sql=None):
-        '''
-        @see: IRbacService.rbacsForRightSQL
-        '''
-        child, parent = aliased(RoleNode), aliased(RoleNode)
-
-        subq = sql or self.session().query(RbacMapped)
-        subq = subq.join(RbacRole, RbacRole.rbac == RbacMapped.Id)
-        subq = subq.join(parent, parent.role == RbacRole.role)
-        subq = subq.join(child, and_(child.left >= parent.left, child.right <= parent.right))
-        subq = subq.join(RbacRight, RbacRight.rbac == child.role)
-        subq = subq.join(RightMapped, and_(RightMapped.Id == RbacRight.right, RightMapped.Id == rightId))
-
-        sql = sql or self.session().query(RbacMapped)
-        sql = sql.join(RbacRight, RbacRight.rbac == RbacMapped.Id)
-        sql = sql.join(RightMapped, and_(RightMapped.Id == RbacRight.right, RightMapped.Id == rightId))
-
-        sql = sql.union(subq).distinct(RbacMapped.Id).order_by(RbacMapped.Id)
-
-        return sql
-
-    def rbacsForRoleSQL(self, roleId, sql=None):
-        '''
-        @see: IRbacService.rbacsForRoleSQL
-        '''
-        child, parent = aliased(RoleNode), aliased(RoleNode)
-
-        subq = sql or self.session().query(RbacMapped)
-        subq = subq.join(RbacRole, RbacRole.rbac == RbacMapped.Id)
-        subq = subq.join(RoleMapped, and_(RoleMapped.Id == RbacRole.role, RoleMapped.Id == roleId))
-        subq = subq.join(parent, parent.role == RbacRole.role)
-        subq = subq.join(child, and_(child.left >= parent.left, child.right <= parent.right))
-
-        sql = sql or self.session().query(RbacMapped)
-        sql = sql.join(RbacRole, RbacRole.rbac == RbacMapped.Id)
-        sql = sql.join(RoleMapped, and_(RoleMapped.Id == RbacRole.role, RoleMapped.Id == roleId))
-
-        sql = sql.union(subq).distinct(RbacMapped.Id).order_by(RbacMapped.Id)
-
-        return sql
-
-    def mergeRole(self, roleId):
-        '''
-        @see: IRbacService.mergeRole
-        '''
-        sql = self.session().query(RoleNode).filter(RoleNode.role == roleId)
-        if sql.count() > 0: return None
-
+        role = insertModel(RoleMapped, entity)
+        assert isinstance(role, RoleMapped), 'Invalid role %s' % role
+        
         # on rbac roles add a row in order to identify from rbac the correspondent role
-        # this will help to have the same query for both user&role rbac
+        # this will help to have the same query for both rbac&role 
         rbacRole = RbacRole()
-        rbacRole.rbac = roleId
-        rbacRole.role = roleId
+        rbacRole.rbacId = role.id
+        rbacRole.roleId = role.id
 
         roleNode = RoleNode()
-        roleNode.role = roleId
+        roleNode.roleId = role.id
 
-        rootId = self._rootId()
+        rootId = self.rootId()
         rootNode = self.session().query(RoleNode).get(rootId)
 
         roleNode.left = rootNode.right
@@ -136,36 +62,43 @@ class RbacServiceAlchemy(SessionSupport, IRbacService):
         self.session().add(rbacRole)
         self.session().add(roleNode)
         self.session().add(rootNode)
-
-    def assignRole(self, roleId, toRoleId):
+        return role.Name
+    
+    def delete(self, identifier):
         '''
-        @see: IRbacService.assignRole
+        @see: IRoleRbacService.delete
         '''
-        child, parent = aliased(RoleNode), aliased(RoleNode)
-
+        # TODO: Nelu implement the delete
+        raise NotImplementedError('Ask Nelu, still not implemented')
+        
+    def addRole(self, identifier, roleName):
+        '''
+        @see: IRoleRbacService.addRole
+        '''
+        toRoleId, roleId = self.obtainRbacId(identifier), self.obtainRbacId(roleName)
         # check if the parent is in child subtree
-        sql = self.session().query(child)
-        sql = sql.join(parent, and_(child.left < parent.left, child.right > parent.right))
-        sql = sql.filter(and_(child.role == toRoleId, parent.role == roleId))
-        if sql.count() > 0: return False
+        sql = self.session().query(Child)
+        sql = sql.join(Parent, and_(Child.left < Parent.left, Child.right > Parent.right))
+        sql = sql.filter(and_(Child.roleId == toRoleId, Parent.roleId == roleId))
+        if sql.count() > 0: return
 
         # check if has parent root
-        sql = self.session().query(parent.id)
-        sql = sql.join(child, and_(child.left > parent.left, child.right < parent.right))
-        sql = sql.filter(child.role == roleId)
+        sql = self.session().query(Parent.id)
+        sql = sql.join(Child, and_(Child.left > Parent.left, Child.right < Parent.right))
+        sql = sql.filter(Child.roleId == roleId)
         parentCnt = sql.count()
 
         # get child roleNode
-        childNode = self.session().query(RoleNode).filter(RoleNode.role == roleId).first()
+        childNode = self.session().query(RoleNode).filter(RoleNode.roleId == roleId).first()
         treeWidth = childNode.right - childNode.left + 1
         id = childNode.id
 
         # get the number of duplicates for parent
-        sql = self.session().query(RoleNode).filter(RoleNode.role == toRoleId)
+        sql = self.session().query(RoleNode).filter(RoleNode.roleId == toRoleId)
         treeCnt = sql.count()
 
         right, count = 0, 0
-        sql = self.session().query(RoleNode.right).filter(RoleNode.role == toRoleId).order_by(RoleNode.right.desc())
+        sql = self.session().query(RoleNode.right).filter(RoleNode.roleId == toRoleId).order_by(RoleNode.right.desc())
 
         for left, in sql.all():
             if count == 0:
@@ -179,7 +112,6 @@ class RbacServiceAlchemy(SessionSupport, IRbacService):
                 sql.update({RoleNode.right: RoleNode.right + gap}, False)
 
                 self.session().flush()
-                # TODO: check the impact of removing: result: not working
                 self.session().commit()
 
                 # get child roleNode
@@ -189,7 +121,7 @@ class RbacServiceAlchemy(SessionSupport, IRbacService):
 
                 # insert
                 insert = InsertFromSelect(tableFor(RoleNode), 'fk_role_id, lft, rgt',
-                                          select([RoleNode.role, RoleNode.left + gap, RoleNode.right + gap]
+                                          select([RoleNode.roleId, RoleNode.left + gap, RoleNode.right + gap]
                                                 ).where(and_(RoleNode.left >= childNode.left, RoleNode.right <= childNode.right)))
                 self.session().execute(insert)
 
@@ -206,7 +138,6 @@ class RbacServiceAlchemy(SessionSupport, IRbacService):
             sql.update({RoleNode.right: RoleNode.right + gap}, False)
 
             self.session().flush()
-            # TODO: check the impact of removing: result: not working
             self.session().commit()
 
             # get child roleNode
@@ -215,10 +146,10 @@ class RbacServiceAlchemy(SessionSupport, IRbacService):
             gap = gap + left - childNode.left
 
             # insert
-            # TODO: for sqlite is nedeed: INSERT INTO t1 (columns) SELECT * FROM t1
+            # for sqlite is nedeed: INSERT INTO t1 (columns) SELECT * FROM t1
             # change how is specified the list of columns
             insert = InsertFromSelect(tableFor(RoleNode), 'fk_role_id, lft, rgt',
-                                      select([RoleNode.role, RoleNode.left + gap, RoleNode.right + gap]
+                                      select([RoleNode.roleId, RoleNode.left + gap, RoleNode.right + gap]
                                              ).where(and_(RoleNode.left >= childNode.left, RoleNode.right <= childNode.right)))
             self.session().execute(insert)
 
@@ -244,20 +175,20 @@ class RbacServiceAlchemy(SessionSupport, IRbacService):
             # update rgt
             sql = self.session().query(RoleNode).filter(RoleNode.right > right)
             sql.update({RoleNode.right: RoleNode.right - treeWidth}, False)
-
-        return True
-
-    def unassignRole(self, roleId, toRoleId):
+    
+    def remRole(self, identifier, roleName):
         '''
-        @see: IRbacService.unassignRole
+        @see: IRoleRbacService.remRole
         '''
-        sql = self.session().query(RoleNode).filter(RoleNode.role == toRoleId)
+        toRoleId, roleId = self.obtainRbacId(identifier), self.obtainRbacId(roleName)
+        
+        sql = self.session().query(RoleNode).filter(RoleNode.roleId == toRoleId)
         try: parentNode = sql.first()
         except NoResultFound: return False
 
         # get child roleNode
         sql = self.session().query(RoleNode)
-        sql = sql.filter(and_(RoleNode.role == roleId, RoleNode.left > parentNode.left, RoleNode.right < parentNode.right))
+        sql = sql.filter(and_(RoleNode.roleId == roleId, RoleNode.left > parentNode.left, RoleNode.right < parentNode.right))
         try: childNode = sql.one()
         except NoResultFound: return False
 
@@ -278,18 +209,18 @@ class RbacServiceAlchemy(SessionSupport, IRbacService):
         # copy the child subtree as last child of root
         if parentCount == childCount:
             # get root roleNode
-            rootNode = self.session().query(RoleNode).get(self._rootId())
+            rootNode = self.session().query(RoleNode).get(self.rootId())
 
             gap = rootNode.right - childNode.left
             rootNode.right = rootNode.right + treeWidth
 
             insert = InsertFromSelect(tableFor(RoleNode), 'fk_role_id, lft, rgt',
-                                      select([RoleNode.role, RoleNode.left + gap, RoleNode.right + gap]
+                                      select([RoleNode.roleId, RoleNode.left + gap, RoleNode.right + gap]
                                              ).where(and_(RoleNode.left >= childNode.left, RoleNode.right <= childNode.right)))
             self.session().execute(insert)
 
         left, count = 0, 0
-        sql = self.session().query(RoleNode.right).filter(RoleNode.role == toRoleId).order_by(RoleNode.right.asc())
+        sql = self.session().query(RoleNode.right).filter(RoleNode.roleId == toRoleId).order_by(RoleNode.right.asc())
 
         for right, in sql.all():
             childLeft = right - leftOffset
@@ -322,33 +253,24 @@ class RbacServiceAlchemy(SessionSupport, IRbacService):
             sql.update({RoleNode.right: RoleNode.right - gap}, False)
 
         return True
-
-    def deleteRole(self, roleId):
-        '''
-        @see: IRbacService.deleteRole
-        '''
-        # TODO: Nelu implement the delete
-        raise NotImplementedError('Ask Nelu, still not implemented')
-
+    
     # ----------------------------------------------------------------
 
-    def _rootId(self):
+    def rootId(self):
         '''
-        Return the root id, that has the lower left value
+        Return the root node id, that has the lower left value
         '''
-        if self._idRoot is None:
-            sql = self.session().query(RoleNode)
+        if self._rootId is None:
+            sql = self.session().query(RoleNode.id)
             sql = sql.order_by(RoleNode.left)
 
-            rootNode = sql.first()
-            if not rootNode:
+            self._rootId = sql.first()
+            if self._rootId is None:
                 rootNode = RoleNode()
                 rootNode.left = 1
                 rootNode.right = 2
-
                 self.session().add(rootNode)
                 self.session().flush((rootNode,))
+                self._rootId = rootNode.id
 
-            self._idRoot = rootNode.id
-
-        return self._idRoot
+        return self._rootId

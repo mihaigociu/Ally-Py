@@ -10,11 +10,13 @@ Provides the model properties that are injected from the path.
 '''
 
 from ally.api.operator.type import TypeProperty
+from ally.api.type import Input
 from ally.container.ioc import injected
-from ally.design.processor.attribute import requires, defines
+from ally.design.processor.attribute import requires, defines, optional
 from ally.design.processor.context import Context
 from ally.design.processor.execution import Chain
 from ally.design.processor.handler import HandlerProcessor
+from ally.support.util_context import findFirst
 
 # --------------------------------------------------------------------
 
@@ -24,6 +26,10 @@ class Invoker(Context):
     '''
     # ---------------------------------------------------------------- Required
     path = requires(list)
+    solved = defines(set, doc='''
+    @rtype: set(object)
+    The input of the caller that are solved on the invoker.
+    ''')
 
 class Element(Context):
     '''
@@ -48,7 +54,10 @@ class Decoding(Context):
     '''
     The decoding context.
     '''
+    # ---------------------------------------------------------------- Optional
+    parent = optional(Context)
     # ---------------------------------------------------------------- Required
+    input = requires(Input)
     property = requires(TypeProperty)
     
 # --------------------------------------------------------------------
@@ -81,5 +90,10 @@ class InjectedPathDecode(HandlerProcessor):
             if el.node and el.isInjected and el.property == decoding.property:
                 if create.pathInjected is None: create.pathInjected = {}
                 create.pathInjected[el.node] = decoding
+                
+                inp = findFirst(decoding, Decoding.parent, Decoding.input)
+                assert isinstance(inp, Input), 'Invalid input %s' % inp
+                if invoker.solved is None: invoker.solved = set()
+                invoker.solved.add(inp)
                 chain.cancel()  # Cancel the decode creation
                 break

@@ -11,8 +11,8 @@ Contains the SQL alchemy meta for ACL group.
 
 from ..api.group import Group
 from .metadata_acl import Base
-from acl.meta.acl import AclAccessDefinition
-from ally.support.sqlalchemy.mapper import validate
+from acl.meta.acl import WithAclAccess
+from sql_alchemy.support.mapper import validate
 from sqlalchemy.dialects.mysql.base import INTEGER
 from sqlalchemy.schema import Column, ForeignKey
 from sqlalchemy.types import String, Boolean
@@ -33,7 +33,7 @@ class GroupMapped(Base, Group):
     # Non REST model attribute --------------------------------------
     id = Column('id', INTEGER(unsigned=True), primary_key=True)
 
-class GroupAccess(Base, AclAccessDefinition):
+class GroupAccess(Base, WithAclAccess):
     '''
     Provides the Group to Access mapping.
     '''

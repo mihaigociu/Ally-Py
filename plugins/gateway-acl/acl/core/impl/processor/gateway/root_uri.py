@@ -16,9 +16,9 @@ from ally.design.processor.handler import HandlerProcessor
 
 # --------------------------------------------------------------------
 
-class Reply(Context):
+class Solicit(Context):
     '''
-    The reply context.
+    The solicit context.
     '''
     # ---------------------------------------------------------------- Defined
     rootURI = defines(str, doc='''
@@ -41,11 +41,11 @@ class RootURIHandler(HandlerProcessor):
         assert isinstance(self.rootURI, str), 'Invalid root URI %s' % self.rootURI
         super().__init__()
     
-    def process(self, chain, reply:Reply, **keyargs):
+    def process(self, chain, solicit:Solicit, **keyargs):
         '''
         @see: HandlerProcessor.process
         
         Populate the roor URI.
         '''
-        assert isinstance(reply, Reply), 'Invalid reply %s' % reply
-        reply.rootURI = self.rootURI.strip('/')
+        assert isinstance(solicit, Solicit), 'Invalid solicit %s' % solicit
+        solicit.rootURI = self.rootURI.strip('/')

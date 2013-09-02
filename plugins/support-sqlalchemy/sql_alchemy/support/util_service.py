@@ -1,7 +1,7 @@
 '''
 Created on Jan 5, 2012
 
-@package: ally core sql alchemy
+@package: support sqlalchemy
 @copyright: 2012 Sourcefabric o.p.s.
 @license: http://www.gnu.org/licenses/gpl-3.0.txt
 @author: Gabriel Nistor
@@ -9,6 +9,7 @@ Created on Jan 5, 2012
 Provides utility methods for SQL alchemy service implementations.
 '''
 
+from .mapper import MappedSupport, mappingFor, tableFor
 from ally.api.criteria import AsLike, AsOrdered, AsBoolean, AsEqual, AsDate, \
     AsTime, AsDateTime, AsRange
 from ally.api.error import IdError
@@ -16,13 +17,29 @@ from ally.api.extension import IterSlice
 from ally.api.operator.type import TypeProperty, TypeCriteria, TypeModel
 from ally.api.type import typeFor
 from ally.support.api.util_service import namesFor
-from ally.support.sqlalchemy.mapper import MappedSupport, mappingFor, tableFor
-from ally.support.sqlalchemy.session import openSession
+from .session import openSession
+from ally.support.util import modifyFirst
 from inspect import isclass
 from itertools import chain
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.mapper import Mapper
 from sqlalchemy.sql.expression import ColumnElement
+
+# --------------------------------------------------------------------
+
+class SessionSupport:
+    '''
+    Class that provides for the services that use SQLAlchemy the session support.
+    All services that use SQLAlchemy have to extend this class in order to provide the sql alchemy session
+    of the request, the session will be automatically handled by the session processor.
+    '''
+
+    def session(self):
+        '''
+        Provide or construct a session.
+        '''
+        return openSession()
 
 # --------------------------------------------------------------------
 
@@ -57,18 +74,16 @@ def buildQuery(sql, query, Mapped, only=None, exclude=None, **mapping):
     @param exclude: tuple(string|TypeCriteriaEntry)|string|TypeCriteriaEntry|None
         The criteria names or references to be excluded when processing the query. If you provided a only parameter you cannot
         provide an exclude.
-    @param mapping: key arguments of columns
-        The column mappings provided for criteria name, the mapping columns will be automatically joined.
+    @param mapping: key arguments of columns or callable(sql, criteria) -> sql
+        The column or sql build callable mappings provided for criteria name, the mapping columns will be automatically joined.
     '''
     assert query is not None, 'A query object is required'
     
     columns = {}
     for name in namesFor(Mapped):
-        cname = '%s%s' % (name[0].lower(), name[1:])
-        if mapping and cname in mapping: columns[cname] = mapping[cname]
-        else:
-            cp = getattr(Mapped, name)
-            if typeFor(cp) is None: columns[cname] = cp  # If no API type is detected it means that the API property is mapped
+        cp = getattr(Mapped, name)
+        # If no API type is detected it means that the API property is mapped
+        if typeFor(cp) is None: columns[modifyFirst(name, False)] = cp
     columns = {name:columns.get(name) for name in namesFor(query)}
 
     if only:
@@ -103,8 +118,19 @@ def buildQuery(sql, query, Mapped, only=None, exclude=None, **mapping):
  
     ordered, unordered = [], []
     for criteria, column in columns.items():
-        if column is None or getattr(query.__class__, criteria) not in query: continue
-        if criteria in mapping: sql = sql.join(tableFor(column))
+        if getattr(query.__class__, criteria) not in query: continue
+        
+        mapped = mapping.get(criteria)
+        if mapped is not None:
+            if isinstance(mapped, InstrumentedAttribute):
+                sql = sql.join(tableFor(mapped))
+                column = mapped
+            else:
+                assert callable(mapped), 'Invalid criteria \'%s\' mapping' % criteria
+                sql = mapped(sql, getattr(query, criteria))
+                continue
+            
+        if column is None: continue
 
         crt = getattr(query, criteria)
         if isinstance(crt, AsBoolean):
@@ -178,7 +204,7 @@ def iterateCollection(sql, offset=None, limit=None, withTotal=False):
 
 # --------------------------------------------------------------------
 
-def insertModel(Mapped, model):
+def insertModel(Mapped, model, **data):
     '''
     Inserts the provided model entity using the current session.
 
@@ -186,6 +212,8 @@ def insertModel(Mapped, model):
         The mapped class to insert the model for.
     @param model: object
         The model to insert.
+    @param data: key arguments
+        Additional data to place on the inserted model.
     @return: object
         The database model that has been inserted.
     '''
@@ -196,18 +224,19 @@ def insertModel(Mapped, model):
         typ, mapper = typeFor(Mapped), mappingFor(Mapped)
         assert isinstance(typ, TypeModel), 'Invalid model class %s' % Mapped
         assert isinstance(mapper, Mapper), 'Invalid mapper %s' % mapper
-        assert typ.isOf(model), 'Invalid model %s for %s' % (model, typ)
         
         dbModel = Mapped()
         for name, prop in typ.properties.items():
-            if not isinstance(mapper.columns.get(name), ColumnElement): continue
+            if name in data : continue
             if prop in model: setattr(dbModel, name, getattr(model, name))
+            
+        for name, value in data.items(): setattr(dbModel, name, value)
     
     openSession().add(dbModel)
     openSession().flush((dbModel,))
     return dbModel
 
-def updateModel(Mapped, model):
+def updateModel(Mapped, model, **data):
     '''
     Updates the provided model entity using the current session.
 
@@ -215,6 +244,8 @@ def updateModel(Mapped, model):
         The mapped class to update the model for, the model type is required to have a property id.
     @param model: object
         The model to be updated.
+    @param data: key arguments
+        Additional data to place on the updated model.
     @return: object
         The database model that has been updated.
     '''
@@ -232,8 +263,10 @@ def updateModel(Mapped, model):
         dbModel = openSession().query(Mapped).get(getattr(model, typ.propertyId.name))
         if not dbModel: raise IdError(typ.propertyId)
         for name, prop in typ.properties.items():
-            if not isinstance(getattr(Mapped, name), ColumnElement): continue
+            if name in data or not isinstance(getattr(Mapped, name), ColumnElement): continue
             if prop in model: setattr(dbModel, name, getattr(model, name))
+            
+        for name, value in data.items(): setattr(dbModel, name, value)
     
     openSession().flush((dbModel,))
     return dbModel

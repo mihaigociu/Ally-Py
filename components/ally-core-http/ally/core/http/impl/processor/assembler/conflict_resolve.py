@@ -96,7 +96,7 @@ class ConflictResolveHandler(HandlerProcessor):
                     for invoker in invokers:
                         assert isinstance(invoker, Invoker), 'Invalid invoker %s' % invoker
                         if address is None and invoker.path: address = '/'.join(el.name or '*' for el in invoker.path)
-                        locations.append(invoker.location)
+                        if invoker.location not in locations: locations.append(invoker.location)
                     aborted.extend(invokers)
                     
                     if reported.isdisjoint(locations):

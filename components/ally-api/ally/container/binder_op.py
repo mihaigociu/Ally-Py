@@ -12,12 +12,13 @@ Provides binding listener function to handle API operators validation.
 from ..api.config import INSERT, UPDATE
 from ..api.operator.type import TypeModel, TypeService, TypeProperty, \
     typePropFor
-from ..api.type import Input, typeFor, Call
+from ..api.type import Input, typeFor
 from ..internationalization import _
-from ..support.api.util_service import iterateCalls
 from .impl.binder import bindListener, callListeners, registerProxyBinder, \
     bindBeforeListener, indexBefore, INDEX_DEFAULT, BindableSupport
 from ally.api.error import InputError
+from ally.api.operator.type import TypeCall
+from ally.support.api.util_service import iterateInputs
 from collections import Sized
 from functools import partial
 from inspect import isclass
@@ -148,23 +149,23 @@ def bindValidations(proxy, mappings=None):
     @param mappings: dictionary{class, class}
         A dictionary containing mapping classes, as a key the class to be replaced and as a value the replacing class.
     '''
-    typ = typeFor(proxy)
-    assert isinstance(typ, TypeService), 'Invalid service proxy %s' % proxy
+    stype = typeFor(proxy)
+    assert isinstance(stype, TypeService), 'Invalid service proxy %s' % stype
     if mappings is None: mappings = {}
     else: assert isinstance(mappings, dict), 'Invalid mappings %s' % mappings
-    assert isinstance(proxy, typ.clazz), 'Invalid proxy %s for service %s' % (proxy, typ.clazz)
+    assert isinstance(proxy, stype.clazz), 'Invalid proxy %s for service %s' % (proxy, stype.clazz)
     registerProxyBinder(proxy)
 
-    for call in iterateCalls(typ):
-        assert isinstance(call, Call)
+    for call in stype.calls.values():
+        assert isinstance(call, TypeCall), 'Invalid call %s' % call
         if call.method in (INSERT, UPDATE):
             positions = {}
-            for k, inp in enumerate(call.inputs):
+            for k, inp in enumerate(iterateInputs(call)):
                 assert isinstance(inp, Input)
-                typ = inp.type
-                if isinstance(typ, TypeModel):
-                    if typ.clazz in mappings:
-                        typ = typeFor(mappings[typ.clazz])
+                itype = inp.type
+                if isinstance(itype, TypeModel):
+                    if itype.clazz in mappings:
+                        typ = typeFor(mappings[itype.clazz])
                         assert isinstance(typ, TypeModel), 'Invalid model mapping class %s' % mappings[typ.clazz]
                     if isinstance(typ.clazz, BindableSupport):
                         positions[k] = typ

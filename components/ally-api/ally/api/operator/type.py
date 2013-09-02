@@ -9,8 +9,9 @@ Created on Mar 13, 2012
 Provides the operator types.
 '''
 
-from ..type import Type, Call, typeFor, TypeClass
+from ..type import Type, typeFor, TypeClass
 from ally.api.type import Input
+from collections import OrderedDict
 from inspect import ismethod, isclass
 
 # --------------------------------------------------------------------
@@ -324,29 +325,55 @@ class TypeInput(Type):
     
 class TypeCall(Type):
     '''
-    Provides the type for the service call.
+    Provides the type for the service call. This class will basically contain all the types that are involved in
+    input and output from the call.
     '''
 
-    def __init__(self, parent, call):
+    def __init__(self, parent, definer, name, method, inputs, output, hints=None):
         '''
         Constructs the service call type.
         @see: Type.__init__
         
         @param parent: TypeService
             The parent service type.
-        @param call: Call
-            The call for call type.
-        @ivar inputs: dictionary{string: TypeInput}
-            The type inputs of the call.
+        @param definer: class
+            The class where the call is actually defined.
+        @param name: string
+            The name of the function represented by the call.
+        @param method: integer
+            The method of the call, can be one of GET, INSERT, UPDATE or DELETE constants in this module.
+        @param inputs: list[Input]|tuple(Input)
+            A list containing all the Input's of the call.
+        @param output: Type
+            The output type for the service call.
+        @param hints: dictionary{string: object}|None
+            The hints associated with the call.
         '''
         assert isinstance(parent, TypeService), 'Invalid parent %s' % parent
-        assert isinstance(call, Call), 'Invalid call %s' % call
+        assert isclass(definer), 'Invalid definer class %s' % definer
+        assert isinstance(name, str) and name.strip(), 'Provide a valid name'
+        assert isinstance(method, int), 'Invalid method %s' % method
+        assert isinstance(inputs, (list, tuple)), 'Invalid inputs %s, needs to be a list' % inputs
+        assert isinstance(output, Type), 'Invalid output type %s' % output
         super().__init__(False, False)
 
         self.parent = parent
-        self.call = call
+        self.definer = definer
+        self.name = name
+        self.method = method
+        self.output = output
         
-        self.inputs = {}
+        self.inputs = OrderedDict()
+        for inp in inputs:
+            assert isinstance(inp, Input), 'Not an input %s' % input
+            self.inputs[inp.name] = TypeInput(self, inp)
+            
+        if hints is None: self.hints = {}
+        else: 
+            assert isinstance(hints, dict), 'Invalid hints %s' % hints
+            if __debug__:
+                for hintn in hints: assert isinstance(hintn, str), 'Invalid hint name %s' % hintn
+            self.hints = dict(hints)
 
     def isOf(self, type):
         '''
@@ -378,7 +405,8 @@ class TypeCall(Type):
         '''
         @see: Type.__str__
         '''
-        return '%s.%s' % (self.parent, self.call)
+        return '%s.%s(%s)->%s' % (self.parent, self.name,
+                                  ', '.join(str(typ.input) for typ in self.inputs.values()), self.output)
     
 class TypeService(TypeClass):
     '''

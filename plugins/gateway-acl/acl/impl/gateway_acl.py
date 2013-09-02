@@ -16,17 +16,17 @@ from ally.container.support import setup
 from ally.design.processor.assembly import Assembly
 from ally.design.processor.attribute import defines, requires
 from ally.design.processor.context import Context
-from ally.design.processor.execution import Processing, FILL_ALL
+from ally.design.processor.execution import Processing, FILL_CLASSES
 from collections import Iterable
 
 # --------------------------------------------------------------------
 
-class Reply(Context):
+class Solicit(Context):
     '''
-    The reply context.
+    The solicit context.
     '''
     # ---------------------------------------------------------------- Defined
-    identifiers = defines(Iterable, doc='''
+    acl = defines(object, doc='''
     @rtype: Iterable(string)
     The groups names to create gateways for.
     ''')
@@ -49,7 +49,7 @@ class GatewayACLService(IGatewayACLService):
         assert isinstance(self.assemblyGroupGateways, Assembly), \
         'Invalid assembly gateways %s' % self.assemblyGroupGateways
         
-        self._processing = self.assemblyGroupGateways.create(reply=Reply)
+        self._processing = self.assemblyGroupGateways.create(solicit=Solicit)
     
     def getGateways(self, group):
         '''
@@ -60,7 +60,6 @@ class GatewayACLService(IGatewayACLService):
         proc = self._processing
         assert isinstance(proc, Processing), 'Invalid processing %s' % proc
         
-        reply = proc.execute(FILL_ALL, reply=proc.ctx.reply(identifiers={group})).reply
-        assert isinstance(reply, Reply), 'Invalid reply %s' % reply
-        if Reply.gateways not in reply: return ()
-        return reply.gateways
+        solicit = proc.execute(FILL_CLASSES, solicit=proc.ctx.solicit(acl={group})).solicit
+        assert isinstance(solicit, Solicit), 'Invalid solicit %s' % solicit
+        return solicit.gateways or ()

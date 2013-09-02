@@ -9,8 +9,8 @@ Created on Jun 6, 2013
 Provides the node invokers conflicts resolving based on replace for call hint.
 '''
 
-from ally.api.operator.type import TypeService
-from ally.api.type import typeFor, Call
+from ally.api.operator.type import TypeService, TypeCall
+from ally.api.type import typeFor
 from ally.container.ioc import injected
 from ally.design.processor.attribute import requires, definesIf
 from ally.design.processor.context import Context
@@ -46,7 +46,7 @@ class Invoker(Context):
     '''
     # ---------------------------------------------------------------- Required
     service = requires(TypeService)
-    call = requires(Call)
+    call = requires(TypeCall)
     location = requires(str)
     
 # --------------------------------------------------------------------

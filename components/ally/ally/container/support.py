@@ -154,7 +154,7 @@ def createEntitySetup(*classes, module=None, wire=True, dispatch=True, nameEntit
 
 # --------------------------------------------------------------------
 
-def listenToEntities(*classes, listeners=None, beforeBinding=True, module=None, all=False):
+def listenToEntities(*classes, listeners=None, beforeBinding=False, module=None, all=False):
     '''
     Listens for entities defined in the provided module that are of the provided classes. The listening is done at the 
     moment of the entity creation so the listen is not dependent of the declared entity return type.

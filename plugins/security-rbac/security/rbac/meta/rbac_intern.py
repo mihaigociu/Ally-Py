@@ -9,7 +9,8 @@ Created on Dec 21, 2012
 Contains the SQL alchemy meta for rbac internal mappings.
 '''
 
-from .rbac import RbacMapped, RoleMapped
+from .rbac import Rbac
+from .role import RoleMapped
 from security.meta.metadata_security import Base
 from security.meta.right import RightMapped
 from sqlalchemy.dialects.mysql.base import INTEGER
@@ -25,9 +26,9 @@ class RoleNode(Base):
     __table_args__ = dict(mysql_engine='InnoDB')
 
     id = Column('id', INTEGER(unsigned=True), primary_key=True)
-    role = Column('fk_role_id', ForeignKey(RoleMapped.Id))
     left = Column('lft', INTEGER, nullable=False)
     right = Column('rgt', INTEGER, nullable=False)
+    roleId = Column('fk_role_id', ForeignKey(RoleMapped.id, ondelete='CASCADE'))
 
 class RbacRight(Base):
     '''
@@ -36,8 +37,8 @@ class RbacRight(Base):
     __tablename__ = 'rbac_rbac_right'
     __table_args__ = dict(mysql_engine='InnoDB')
 
-    rbac = Column('fk_rbac_id', ForeignKey(RbacMapped.Id), primary_key=True)
-    right = Column('fk_right_id', ForeignKey(RightMapped.Id), primary_key=True)
+    rbacId = Column('fk_rbac_id', ForeignKey(Rbac.id, ondelete='CASCADE'), primary_key=True)
+    rightId = Column('fk_right_id', ForeignKey(RightMapped.Id, ondelete='CASCADE'), primary_key=True)
 
 class RbacRole(Base):
     '''
@@ -46,5 +47,5 @@ class RbacRole(Base):
     __tablename__ = 'rbac_rbac_role'
     __table_args__ = dict(mysql_engine='InnoDB')
 
-    rbac = Column('fk_rbac_id', ForeignKey(RbacMapped.Id), primary_key=True)
-    role = Column('fk_role_id', ForeignKey(RoleMapped.Id), primary_key=True)
+    rbacId = Column('fk_rbac_id', ForeignKey(Rbac.id, ondelete='CASCADE'), primary_key=True)
+    roleId = Column('fk_role_id', ForeignKey(RoleMapped.id, ondelete='CASCADE'), primary_key=True)

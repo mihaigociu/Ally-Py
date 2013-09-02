@@ -376,49 +376,6 @@ class Input:
             st.append(str(self.default))
         return ''.join(st)
 
-class Call:
-    '''
-    Provides the container for a service call. This class will basically contain all the types that are involved in
-    input and output from the call.
-    '''
-
-    def __init__(self, name, method, inputs, output, hints=None):
-        '''
-        Constructs an API call that will have the provided input and output types.
-        
-        @param name: string
-            The name of the function represented by the call.
-        @param method: integer
-            The method of the call, can be one of GET, INSERT, UPDATE or DELETE constants in this module.
-        @param inputs: list[Input]|tuple(Input)
-            A list containing all the Input's of the call.
-        @param output: Type
-            The output type for the service call.
-        @param hints: dictionary{string: object}|None
-            The hints associated with the call.
-        '''
-        assert isinstance(name, str) and name.strip(), 'Provide a valid name'
-        assert isinstance(method, int), 'Invalid method %s' % method
-        assert isinstance(inputs, (list, tuple)), 'Invalid inputs %s, needs to be a list' % inputs
-        assert isinstance(output, Type), 'Invalid output type %s' % output
-        
-        if __debug__:
-            for inp in inputs: assert isinstance(inp, Input), 'Not an input %s' % input
-        if hints is not None:
-            assert isinstance(hints, dict), 'Invalid hints %s' % hints
-            if __debug__:
-                for hintn in hints: assert isinstance(hintn, str), 'Invalid hint name %s' % hintn
-        else: hints = {}
-
-        self.name = name
-        self.method = method
-        self.inputs = tuple(inputs)
-        self.output = output
-        self.hints = hints
-
-    def __str__(self):
-        return '%s(%s)->%s' % (self.name, ', '.join(str(inp) for inp in self.inputs), self.output)
-    
 # --------------------------------------------------------------------
 
 class Non(Uninstantiable):

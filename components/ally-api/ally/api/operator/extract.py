@@ -10,9 +10,8 @@ Provides the configuration functions.
 '''
 
 from ..type import Non, Type, Input, Iter, typeFor
-from .type import TypeContainer, TypeCriteria, TypeQuery, TypeModel
-from ally.api.operator.type import TypeProperty, TypeOption, Call, \
-    TypePropertyContainer
+from .type import TypeContainer, TypeCriteria, TypeQuery, TypeModel, \
+    TypeProperty, TypeOption, TypePropertyContainer, TypeCall, TypeInput
 from ally.support.util_sys import locationStack
 from inspect import isfunction, getfullargspec, isclass
 import logging
@@ -217,7 +216,7 @@ def processGenericCall(call, generic):
     If either the output or input of the call is based on the provided super model or query then it will create 
     new call that will have the super model or query replaced with the new model or query in the types of the call.
     
-    @param call: Call
+    @param call: TypeCall
         The call to be analyzed.
     @param generic: dictionary{class, class}
         The dictionary containing as a key the class to be generically replaced and as a value the class to replace with.
@@ -225,25 +224,18 @@ def processGenericCall(call, generic):
         If the provided call is not depended on the super model it will be returned as it is, if not a new call
         will be created with all the dependencies from super model replaced with the new model.
     '''
-    assert isinstance(call, Call), 'Invalid call %s' % call
+    assert isinstance(call, TypeCall), 'Invalid call %s' % call
     assert isinstance(generic, dict), 'Invalid generic %s' % generic
-    updated = False
     output = processGenericType(call.output, generic)
-    if output: updated = True
-    else: output = call.output
+    if not output: output = call.output
     inputs = []
-    for inp in call.inputs:
-        assert isinstance(inp, Input)
-        genericType = processGenericType(inp.type, generic)
-        if genericType:
-            inputs.append(Input(inp.name, genericType, inp.hasDefault, inp.default))
-            updated = True
-        else: inputs.append(inp)
-    if updated:
-        newCall = Call(call.name, call.method, inputs, output, call.hints)
-        log.info('Generic call transformation from %s to %s' % (call, newCall))
-        call = newCall
-    return call
+    for itype in call.inputs.values():
+        assert isinstance(itype, TypeInput), 'Invalid input type %s' % itype
+        assert isinstance(itype.input, Input), 'Invalid input %s' % itype.input
+        genericType = processGenericType(itype.input.type, generic)
+        if genericType: inputs.append(Input(itype.input.name, genericType, itype.input.hasDefault, itype.input.default))
+        else: inputs.append(itype.input)
+    return call.name, call.method, inputs, output, call.hints
 
 def processGenericType(forType, generic):
     '''

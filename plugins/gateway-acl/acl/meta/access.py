@@ -10,19 +10,18 @@ Contains the SQL alchemy meta for ACL access.
 '''
 
 from ..api.access import Access, Entry, Property
+from .acl_intern import WithMethod, WithPath, WithType
 from .metadata_acl import Base
-from .acl_intern import Path, Method, Type
-from ally.support.sqlalchemy.mapper import validate
+from sql_alchemy.support.mapper import validate
 from sqlalchemy.dialects.mysql.base import INTEGER
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import relationship
 from sqlalchemy.schema import Column, ForeignKey, UniqueConstraint
 from sqlalchemy.types import String
 
 # --------------------------------------------------------------------
 
 @validate
-class AccessMapped(Base, Access):
+class AccessMapped(Base, WithPath, WithMethod, Access):
     '''
     Provides the ACL access mapping.
     '''
@@ -34,18 +33,9 @@ class AccessMapped(Base, Access):
     Shadowing = Column('fk_shadowing_id', ForeignKey('acl_access.id', ondelete='CASCADE'))
     Shadowed = Column('fk_shadowed_id', ForeignKey('acl_access.id', ondelete='CASCADE'))
     Hash = Column('hash', String(50), nullable=False, unique=True)
-    # Non REST model attribute --------------------------------------
-    pathId = Column('fk_path_id', ForeignKey(Path.id, ondelete='RESTRICT'), nullable=False)
-    methodId = Column('fk_method_id', ForeignKey(Method.id, ondelete='RESTRICT'), nullable=False)
-    # Relationships -------------------------------------------------
-    path = relationship(Path, lazy='joined', uselist=False)
-    method = relationship(Method, lazy='joined', uselist=False)
-    # REST model attribute with name conflicts ----------------------
-    Path = association_proxy('path', 'path')
-    Method = association_proxy('method', 'name')
     
 @validate
-class EntryMapped(Base, Entry):
+class EntryMapped(Base, WithType, Entry):
     '''
     Provides the ACL access entry mapping.
     '''
@@ -58,14 +48,9 @@ class EntryMapped(Base, Entry):
     # Non REST model attribute --------------------------------------
     id = Column('id', INTEGER(unsigned=True), primary_key=True)
     accessId = Column('fk_access_id', ForeignKey(AccessMapped.Id, ondelete='CASCADE'), nullable=False)
-    typeId = Column('fk_type_id', ForeignKey(Type.id, ondelete='RESTRICT'), nullable=False)
-    # Relationships -------------------------------------------------
-    type = relationship(Type, lazy='joined', uselist=False)
-    # REST model attribute with name conflicts ----------------------
-    Type = association_proxy('type', 'name')
     
 @validate
-class PropertyMapped(Base, Property):
+class PropertyMapped(Base, WithType, Property):
     '''
     Provides the ACL access property mapping.
     '''
@@ -76,9 +61,4 @@ class PropertyMapped(Base, Property):
     # Non REST model attribute --------------------------------------
     id = Column('id', INTEGER(unsigned=True), primary_key=True)
     accessId = Column('fk_access_id', ForeignKey(AccessMapped.Id, ondelete='CASCADE'), nullable=False)
-    typeId = Column('fk_type_id', ForeignKey(Type.id, ondelete='RESTRICT'), nullable=False)
-    # Relationships -------------------------------------------------
-    type = relationship(Type, lazy='joined', uselist=False)
-    # REST model attribute with name conflicts ----------------------
-    ype = association_proxy('type', 'name')
     

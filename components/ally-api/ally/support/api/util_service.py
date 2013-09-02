@@ -12,7 +12,7 @@ Provides utility methods for service implementations.
 from ally.api.criteria import AsBoolean, AsLike, AsEqual, AsOrdered
 from ally.api.extension import IterSlice
 from ally.api.operator.type import TypeContainer, TypeModel, TypeService, \
-    TypeProperty
+    TypeProperty, TypeCall
 from ally.api.type import typeFor
 from ally.type_legacy import Iterable, Iterator
 from collections import Sized
@@ -74,18 +74,18 @@ def nameForModel(model):
     assert isinstance(mtype, TypeModel), 'Invalid model %s' % model
     return mtype.name
 
-def iterateCalls(service):
+def iterateInputs(call):
     '''
-    Provides the calls of the service.
+    Provides the inputs of the call.
     
-    @param service: service object|class
-        The service to provide the calls for.
-    @return: Iterator(Call)
-        The iterator containing the calls.
+    @param call: call object|class
+        The call to provide the inputs for.
+    @return: list[Input]
+        The iterator containing the inputs.
     '''
-    stype = typeFor(service)
-    assert isinstance(stype, TypeService), 'Invalid service %s' % service
-    return (ctype.call for ctype in stype.calls.values())
+    ctype = typeFor(call)
+    assert isinstance(ctype, TypeCall), 'Invalid call %s' % call
+    return [itype.input for itype in ctype.inputs.values()]
 
 def isModelId(obj):
     '''
@@ -379,6 +379,18 @@ def processCollection(collection, clazz=None, query=None, fetcher=None, offset=0
     collection = trimIter(collection, total, offset, limit)
     if withTotal: return IterSlice(collection, total, offset, limit)
     return collection
+
+def emptyCollection(withTotal=False, **options):
+    '''
+    Provides an empty collection based on the provided options.
+    
+    ... the options
+    
+    @return: Iterable()
+        The empty collection.
+    '''
+    if withTotal: return IterSlice((), 0, 0, 0)
+    return ()
 
 # --------------------------------------------------------------------
 

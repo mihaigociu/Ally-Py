@@ -49,13 +49,11 @@ def classesIn(*paths, mandatory=True):
     '''
     modules, filter = {}, []
     for path in paths:
+        if ismodule(path): path = '%s.**.*' % path.__name__
         if isinstance(path, str):
             k = path.rfind('.')
             if k >= 0:
                 for modulePath in searchModules(path[:k]): modules[modulePath] = modulePath
             filter.append(path)
-        elif ismodule(path):
-            modules[path.__name__] = path.__name__
-            filter.append('%s.**' % path.__name__)
         else: raise AOPError('Cannot use path %s' % path)
     return AOPModules(modules).classes(mandatory).filter(*filter)

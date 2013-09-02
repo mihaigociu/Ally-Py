@@ -16,17 +16,16 @@ from ally.container.support import setup
 from ally.design.processor.attribute import defines
 from ally.design.processor.context import Context
 from ally.design.processor.handler import HandlerProcessor, Handler
-from collections import Iterable
-import itertools
+from ally.design.processor.execution import Chain
 
 # --------------------------------------------------------------------
 
-class Reply(Context):
+class Solicit(Context):
     '''
-    The reply context.
+    The solicit context.
     '''
     # ---------------------------------------------------------------- Defined
-    identifiers = defines(Iterable, doc='''
+    acl = defines(object, doc='''
     @rtype: Iterable(string)
     The group names to create gateways for.
     ''')
@@ -46,14 +45,15 @@ class AnonymousGroupHandler(HandlerProcessor):
         assert isinstance(self.groupService, IGroupService), 'Invalid group service %s' % self.groupService
         super().__init__()
     
-    def process(self, chain, reply:Reply, **keyargs):
+    def process(self, chain, solicit:Solicit, **keyargs):
         '''
         @see: HandlerProcessor.process
         
         Inject the groups identifiers.
         '''
-        assert isinstance(reply, Reply), 'Invalid reply %s' % reply
+        assert isinstance(chain, Chain), 'Invalid chain %s' % chain
+        assert isinstance(solicit, Solicit), 'Invalid solicit %s' % solicit
+        assert solicit.acl is None, 'There is already an acl object %s' % solicit.acl
         
-        anonymous = self.groupService.getAll(q=QGroup(isAnonymous=True))
-        if reply.identifiers is not None: reply.identifiers = itertools.chain(reply.identifiers, anonymous)
-        else: reply.identifiers = anonymous
+        solicit.acl = list(self.groupService.getAll(q=QGroup(isAnonymous=True)))
+        if not solicit.acl: chain.cancel()

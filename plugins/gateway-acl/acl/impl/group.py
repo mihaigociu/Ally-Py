@@ -10,7 +10,6 @@ Implementation for the ACL group.
 '''
 
 from ..api.group import IGroupService, QGroup
-from ..meta.filter import FilterEntryMapped
 from ..meta.group import GroupMapped, GroupAccess
 from acl.core.impl.acl import AclServiceAlchemy
 from ally.container.ioc import injected
@@ -29,13 +28,3 @@ class GroupServiceAlchemy(EntityServiceAlchemy, AclServiceAlchemy, IGroupService
     def __init__(self):
         EntitySupportAlchemy.__init__(self, GroupMapped, QGroup)
         AclServiceAlchemy.__init__(self, GroupMapped, GroupAccess)
-    
-    def validateFilter(self, filterId):
-        '''
-        @see: AclServiceAlchemy.validateFilter
-        '''
-        assert isinstance(filterId, int), 'Invalid filter id %s' % filterId
-        
-        sql = self.session().query(FilterEntryMapped.id)
-        sql = sql.filter(FilterEntryMapped.filterId == filterId)
-        return sql.count() == 1  # Only the target entry is allowed

@@ -152,17 +152,6 @@ class IAccessService(IEntityGetService, IEntityQueryService):
         @return: boolean
             True if the delete is successful, false otherwise.
         '''
-    
-    # TODO: Gabriel: remove
-    @call(filter='Filter1')
-    def isDummy1Filter(self, id:Access) -> bool:
-        '''
-        '''
-    
-    @call(webName='Second', filter='Filter2')
-    def isDummy2Filter(self, id:Property) -> bool:
-        '''
-        '''
         
 # --------------------------------------------------------------------
 

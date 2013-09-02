@@ -22,9 +22,9 @@ from gateway.api.gateway import Gateway
 
 # --------------------------------------------------------------------
 
-class Reply(Context):
+class Solicit(Context):
     '''
-    The reply context.
+    The solicit context.
     '''
     # ---------------------------------------------------------------- Required
     gateways = requires(Iterable)
@@ -59,17 +59,17 @@ class RegisterMethodOverride(HandlerProcessor):
         assert isinstance(self.methods_override, dict), 'Invalid methods override %s' % self.methods_override
         super().__init__()
     
-    def process(self, chain, reply:Reply, **keyargs):
+    def process(self, chain, solicit:Solicit, **keyargs):
         '''
         @see: HandlerProcessor.process
         
         Adds the method override to gateways.
         '''
-        assert isinstance(reply, Reply), 'Invalid reply %s' % reply
-        if reply.gateways is None: return
+        assert isinstance(solicit, Solicit), 'Invalid solicit %s' % solicit
+        if solicit.gateways is None: return
         
         gateways, indexed = [], {}
-        for gateway in reply.gateways:
+        for gateway in solicit.gateways:
             assert isinstance(gateway, Gateway), 'Invalid gateway %s' % gateway
             gateways.append(gateway)
             if not gateway.Methods: continue
@@ -95,8 +95,8 @@ class RegisterMethodOverride(HandlerProcessor):
             if byPattern is None: byPattern = indexed[ogateway.Pattern] = []
             byPattern.append((overrides, ogateway))
         
-        if indexed: reply.gateways = self.iterOverrides(gateways, indexed)
-        else: reply.gateways = gateways
+        if indexed: solicit.gateways = self.iterOverrides(gateways, indexed)
+        else: solicit.gateways = gateways
             
     # ----------------------------------------------------------------
             

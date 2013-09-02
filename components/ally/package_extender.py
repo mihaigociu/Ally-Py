@@ -142,7 +142,7 @@ class ModuleLoader:
         try: module = self.__loader.load_module(name)
         except:
             print('-' * 150, file=sys.stderr)
-            print('Problem occurred while loading module %r from loader %s' % (name, self.__loader), file=sys.stderr)
+            print('Problem occurred while loading module \'%s\' from loader %s' % (name, self.__loader), file=sys.stderr)
             traceback.print_exc()
             print('-' * 150, file=sys.stderr)
             raise

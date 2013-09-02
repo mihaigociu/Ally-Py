@@ -20,12 +20,12 @@ class IAclPermissionProvider(metaclass=abc.ABCMeta):
     '''
     
     @abc.abstractmethod
-    def iteratePermissions(self, identifiers):
+    def iteratePermissions(self, acl):
         '''
         Iterates all the ACL permissions for the provided identifiers.
         
-        @param identifiers: Iterable(object)
-            The identifiers to iterate the permissions for.
+        @param acl: object
+            The acl resource(s) to iterate the permissions for.
         @return: Iterable(tuple(Access, dictionary{object: tuple(dictionary{integer:list[string]},
                                                                  dictionary{string:list[string]})}))
             Provides and iterator that yields tuples with the access and filters.

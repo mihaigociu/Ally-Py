@@ -9,13 +9,8 @@ Created on Feb 19, 2013
 Provides the ally core http setup patch.
 '''
 
-from ..sql_alchemy.processor import transaction
-from .service import assemblyAnonymousGateways, \
-    updateAssemblyAnonymousGatewaysForAcl, registerAclPermission, \
-    updateAssemblyGroupGateways, assemblyGroupGateways
-from acl.core.impl.processor.gateway.root_uri import RootURIHandler
-from ally.container import support, app, ioc
-from ally.design.processor.handler import Handler
+from .service import root_uri_acl
+from ally.container import ioc
 import logging
 
 # --------------------------------------------------------------------
@@ -26,38 +21,11 @@ log = logging.getLogger(__name__)
 
 try:
     from __setup__ import ally_core_http  # @UnusedImport
-except ImportError: log.info('No ally core http component available, thus no need to register ACL to it')
+except ImportError: log.info('No ally core http component available, thus no need to register root URI for ACL Gateways')
 else:
-    from __setup__.ally_core.resources import assemblyAssembler, updateAssemblyAssembler, processMethod
     from __setup__.ally_core_http.server import root_uri_resources
-
-    # The assembler processors
-    processFilter = indexFilter = indexAccess = support.notCreated  # Just to avoid errors
-    support.createEntitySetup('acl.core.impl.processor.assembler.**.*')
     
     # ----------------------------------------------------------------
     
-    @ioc.entity
-    def rootURI() -> Handler:
-        b = RootURIHandler()
-        b.rootURI = root_uri_resources()
-        return b
-    
-    # ----------------------------------------------------------------
-    
-    @ioc.after(updateAssemblyAnonymousGatewaysForAcl)
-    def updateAssemblyAnonymousGatewaysForHTTPRoot():
-        assemblyAnonymousGateways().add(rootURI(), before=registerAclPermission())
-        
-    @ioc.after(updateAssemblyGroupGateways)
-    def updateAssemblyGroupGatewaysForHTTPRoot():
-        assemblyGroupGateways().add(rootURI(), before=registerAclPermission())
-    
-    @ioc.after(updateAssemblyAssembler)
-    def updateAssemblyAssemblerForFilter():
-        assemblyAssembler().add(processFilter(), before=processMethod())
-    
-    @app.setup(app.DEVEL)
-    def updateAssemblyAssemblerForAccess():
-        assemblyAssembler().add(transaction(), indexFilter(), indexAccess())
-
+    @ioc.replace(root_uri_acl)
+    def root_uri_acl_resources(): return root_uri_resources()

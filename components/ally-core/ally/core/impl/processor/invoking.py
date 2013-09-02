@@ -11,7 +11,7 @@ Provides the invoking handler.
 
 from ally.api.config import GET, INSERT, UPDATE, DELETE
 from ally.api.error import InputError
-from ally.api.type import Input, Call
+from ally.api.type import Input
 from ally.core.error import DevelError
 from ally.core.spec.codes import INPUT_ERROR, INSERT_ERROR, INSERT_SUCCESS, \
     UPDATE_SUCCESS, UPDATE_ERROR, DELETE_SUCCESS, DELETE_ERROR, Coded
@@ -33,7 +33,6 @@ class Invoker(Context):
     The invoker context.
     '''
     # ---------------------------------------------------------------- Required
-    call = requires(Call)
     method = requires(int)
     inputs = requires(tuple)
     namedArguments = requires(set)
@@ -95,12 +94,11 @@ class InvokingHandler(HandlerProcessor):
 
         invoker = request.invoker
         assert isinstance(invoker, Invoker), 'Invalid invoker %s' % invoker
-        if invoker.doInvoke is None or invoker.call is None: return  # No invoke to process
+        if invoker.doInvoke is None: return  # No invoke to process
         
         assert isinstance(invoker.doInvoke, IDo), 'Invalid invoker invoke %s' % invoker.doInvoke
         callBack = self.invokeCallBack.get(invoker.method)
         assert callBack is not None, 'Cannot process invoker, at:%s' % invoker.location
-        assert isinstance(invoker.call, Call), 'Invalid invoker call %s' % invoker.call
         
         if request.arguments is None: arguments = {}
         else: arguments = dict(request.arguments)

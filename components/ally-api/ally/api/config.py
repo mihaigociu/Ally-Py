@@ -13,10 +13,10 @@ from .operator.descriptor import processWithProperties, processAsQuery, \
     processAsService
 from .operator.extract import Prototype, extractCriterias, extractProperties, \
     extractInputOuput, processGenericCall, inheritedTypesFrom
-from .operator.type import Call, TypeCall, TypeModel, TypeProperty, TypeCriteria, \
+from .operator.type import TypeCall, TypeModel, TypeProperty, TypeCriteria, \
     TypeQuery, TypeService, TypeExtension, TypeOption
 from .type import typeFor
-from ally.api.operator.type import TypePropertyContainer, TypeInput
+from ally.api.operator.type import TypePropertyContainer
 from ally.api.type import List, Input
 from ally.support.util_sys import locationStack
 from inspect import isclass, isfunction
@@ -280,7 +280,7 @@ def call(*args, method=None, **hints):
                 raise Exception(RULE_CALL_ARGUMENTS[1] % (inp.name, locationStack(function)))
         
         function.__isabstractmethod__ = True  # Flag that notifies the ABCMeta that is is an actual abstract method.
-        function._ally_call = Call(name, method, inputs, output, hints)
+        function._ally_call = name, method, inputs, output, hints
         return function
 
     if function is not None: return decorator(function)
@@ -319,7 +319,7 @@ def prototype(*args, method=None, **hints):
                 assert isinstance(inp, Input), 'Invalid input %s' % inp
                 if not match(RULE_CALL_ARGUMENTS[0], inp.name):
                     raise Exception(RULE_CALL_ARGUMENTS[1] % (inp.name, locationStack(function)))
-            return Call(name, method, inputs, output, hints)
+            return name, method, inputs, output, hints
         
         function.__isabstractmethod__ = True  # Flag that notifies the ABCMeta that is is an actual abstract method.
         function._ally_call_prototype = prototype
@@ -377,7 +377,7 @@ def service(*generic):
         service = clazz._ally_type = TypeService(clazz)
         for name, function in clazz.__dict__.items():
             if not isfunction(function): continue
-            try: service.calls[name] = TypeCall(service, function._ally_call)
+            try: service.calls[name] = TypeCall(service, clazz, *function._ally_call)
             except AttributeError: raise Exception('No call for method at:%s' % locationStack(function))
             del function._ally_call
 
@@ -393,9 +393,9 @@ def service(*generic):
                     except AttributeError: pass
                     else:
                         if prototype is None: prototype = Prototype(replaces, clazz)
-                        service.calls[name] = TypeCall(service, callPrototype(prototype))
+                        service.calls[name] = TypeCall(service, base, *callPrototype(prototype))
                         continue
-                    try: service.calls[name] = TypeCall(service, function._ally_call)
+                    try: service.calls[name] = TypeCall(service, base, *function._ally_call)
                     except AttributeError: raise Exception('No call for inherited method at:%s' % locationStack(function))
                 classes.extend(base.__bases__)
                 
@@ -406,13 +406,7 @@ def service(*generic):
                 for name, cal in inherited.calls.items():
                     assert isinstance(cal, TypeCall)
                     if name not in service.calls:
-                        service.calls[name] = TypeCall(service, processGenericCall(cal.call, generics))
-                    
-        for cal in service.calls.values():
-            assert isinstance(cal.call, Call), 'Invalid call %s' % cal.call
-            for inp in cal.call.inputs:
-                assert isinstance(inp, Input), 'Invalid input %s' % inp
-                cal.inputs[inp.name] = TypeInput(cal, inp)
+                        service.calls[name] = TypeCall(service, cal.definer, *processGenericCall(cal, generics))
     
         return processAsService(clazz, service)
     if clazz: return decorator(clazz)
@@ -476,3 +470,26 @@ def option(*args):
         return processWithProperties(clazz, option)
     if args: return decorator(*args)
     return decorator
+
+# --------------------------------------------------------------------
+
+def hints(*targets, **hints):
+    '''
+    Places hints on the provided target type.
+    
+    @param targets: arguments[container TypeModel or TypeCall]
+        The target call or model to place the hints.
+    @param hints: key arguments
+        The hints to place on the targets.
+    '''
+    assert targets, 'At least a target is required'
+    assert hints, 'At least a hint is required'
+    
+    for target in targets:
+        typ = typeFor(target)
+        if isinstance(typ, TypeCall):
+            assert isinstance(typ, TypeCall)
+            typ.hints.update(hints)
+        else:
+            assert isinstance(typ, TypeModel), 'Invalid target %s' % target
+            typ.hints.update(hints)

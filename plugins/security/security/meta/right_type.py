@@ -11,7 +11,7 @@ Contains the SQL alchemy meta for right API.
 
 from ..api.right_type import RightType
 from .metadata_security import Base
-from ally.support.sqlalchemy.mapper import validate
+from sql_alchemy.support.mapper import validate
 from sqlalchemy.dialects.mysql.base import INTEGER
 from sqlalchemy.schema import Column
 from sqlalchemy.types import String
@@ -26,7 +26,8 @@ class RightTypeMapped(Base, RightType):
     __tablename__ = 'security_right_type'
     __table_args__ = dict(mysql_engine='InnoDB', mysql_charset='utf8')
 
-    Id = Column('id', INTEGER(unsigned=True), primary_key=True)
     Name = Column('name', String(100), nullable=False, unique=True)
     Description = Column('description', String(255))
+    # None REST model attribute --------------------------------------
+    id = Column('id', INTEGER(unsigned=True), primary_key=True)
 

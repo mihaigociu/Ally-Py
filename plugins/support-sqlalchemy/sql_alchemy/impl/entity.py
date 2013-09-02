@@ -12,11 +12,10 @@ SQL alchemy implementation for the generic ided or named entities API.
 from ally.api.operator.type import TypeModel, TypeProperty, TypeQuery
 from ally.api.type import typeFor
 from ally.support.api.util_service import modelId
-from ally.support.sqlalchemy.mapper import MappedSupport
-from ally.support.sqlalchemy.session import SessionSupport
-from ally.support.sqlalchemy.util_service import buildQuery, iterateCollection, \
-    insertModel, updateModel, deleteModel
 from inspect import isclass
+from sql_alchemy.support.mapper import MappedSupport
+from sql_alchemy.support.util_service import SessionSupport, buildQuery, \
+    iterateCollection, insertModel, updateModel, deleteModel
 import logging
 
 # --------------------------------------------------------------------

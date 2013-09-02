@@ -9,9 +9,9 @@ Created on May 26, 2011
 General specifications for the entities API that poses an integer Id identifier.
 '''
 
+from .entity import IEntityCRUDPrototype, IEntityGetPrototype, \
+    IEntityFindPrototype, IEntityQueryPrototype
 from ally.api.config import model, query, service
-from .entity import IEntityGetPrototype, IEntityFindPrototype, \
-    IEntityQueryPrototype
 
 # --------------------------------------------------------------------
 
@@ -51,7 +51,7 @@ class IEntityQueryService(IEntityQueryPrototype):
     '''
 
 @service(('Entity', Entity))
-class IEntityCRUDService:
+class IEntityCRUDService(IEntityCRUDPrototype):
     '''
     Entity Id identifier service for @see: IEntityCRUDService
     '''

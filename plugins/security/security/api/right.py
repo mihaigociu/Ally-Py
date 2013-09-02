@@ -11,6 +11,7 @@ API specifications for security right.
 
 from .domain_security import modelSecurity
 from .right_type import RightType
+from acl.core.api.acl import IAclPrototype
 from ally.api.config import query, service, call
 from ally.api.criteria import AsLikeOrdered
 from ally.api.option import SliceAndTotal # @UnusedImport
@@ -40,8 +41,8 @@ class QRight(QEntity):
 
 # --------------------------------------------------------------------
 
-@service((Entity, Right))
-class IRightService(IEntityGetService, IEntityCRUDService):
+@service((Entity, Right), ('ACL', Right))
+class IRightService(IEntityGetService, IEntityCRUDService, IAclPrototype):
     '''
     Right model service API.
     '''

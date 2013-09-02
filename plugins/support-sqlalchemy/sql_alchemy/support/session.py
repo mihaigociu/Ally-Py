@@ -25,21 +25,6 @@ log = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------
 
-class SessionSupport:
-    '''
-    Class that provides for the services that use SQLAlchemy the session support.
-    All services that use SQLAlchemy have to extend this class in order to provide the sql alchemy session
-    of the request, the session will be automatically handled by the session processor.
-    '''
-
-    def session(self):
-        '''
-        Provide or construct a session.
-        '''
-        return openSession()
-
-# --------------------------------------------------------------------
-
 def setKeepAlive(keep):
     '''
     Set the flag that indicates if a session should be closed or kept alive after a call has finalized.
@@ -51,7 +36,6 @@ def setKeepAlive(keep):
     assert isinstance(keep, bool), 'Invalid keep flag %s' % keep
     if not keep: del current_thread()._ally_db_session_alive
     else: current_thread()._ally_db_session_alive = keep
-    
 
 def beginWith(sessionCreator):
     '''
@@ -227,11 +211,7 @@ class SessionBinder(IProxyHandler):
             endCurrent(rollback)
             raise
         else:
-            if isgenerator(returned):
-                # If the returned value is a generator we need to wrap it in order to provide session support when the actual
-                # generator is used
-                return self.wrapGenerator(returned)
-            elif hasSession():
+            if hasSession():
                 session = openSession()
                 try:
                     session.flush()
@@ -240,6 +220,12 @@ class SessionBinder(IProxyHandler):
                 except:
                     endCurrent(rollback)
                     raise
+                
+            elif isgenerator(returned):
+                # If the returned value is a generator we need to wrap it in order to provide session support when the actual
+                # generator is used
+                return self.wrapGenerator(returned)
+
             return returned
 
     # ----------------------------------------------------------------

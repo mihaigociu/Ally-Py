@@ -18,6 +18,7 @@ from ally.design.processor.handler import HandlerProcessor
 from ally.http.spec.server import HTTP_GET
 from ally.support.util import firstOf
 from ally.support.util_spec import IDo
+from ally.support.util_sys import locationStack
 
 # --------------------------------------------------------------------
 
@@ -43,6 +44,7 @@ class InvokerResources(Context):
     '''
     # ---------------------------------------------------------------- Defined
     id = defines(str)
+    location = defines(str)
     methodHTTP = defines(str)
     path = defines(list)
     encoder = defines(ITransfrom, doc='''
@@ -87,6 +89,7 @@ class InvokerResourcesHandler(HandlerProcessor):
         register.invokers.append(invoker)
         assert isinstance(invoker, InvokerResources), 'Invalid invoker %s' % invoker
         invoker.id = self.nameResources
+        invoker.location = locationStack(self.__class__)
         invoker.methodHTTP = HTTP_GET
         invoker.path = []
         invoker.encoder = EncoderResources(self.nameResources, self.nameRef, invoker)

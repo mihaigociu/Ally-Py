@@ -28,9 +28,9 @@ PROPERTY_NAME = 'Property'
 
 # --------------------------------------------------------------------
     
-class Reply(Context):
+class Solicit(Context):
     '''
-    The reply context.
+    The solicit context.
     '''
     # ---------------------------------------------------------------- Defined
     gateways = defines(Iterable, doc='''
@@ -39,6 +39,7 @@ class Reply(Context):
     ''')
     # ---------------------------------------------------------------- Optional
     rootURI = optional(str)
+    replacements = optional(dict)
     # ---------------------------------------------------------------- Required
     permissions = requires(Iterable)
 
@@ -61,25 +62,27 @@ class RegisterPermissionGatewayHandler(HandlerProcessor):
     def __init__(self):
         super().__init__(Permission=Permission)
     
-    def process(self, chain, reply:Reply, **keyargs):
+    def process(self, chain, solicit:Solicit, **keyargs):
         '''
         @see: HandlerProcessor.process
         
         Adds the access permissions gateways.
         '''
-        assert isinstance(reply, Reply), 'Invalid reply %s' % reply
-        if not reply.permissions: return
+        assert isinstance(solicit, Solicit), 'Invalid solicit %s' % solicit
+        if not solicit.permissions: return
         
-        if Reply.rootURI in reply: rootURI = reply.rootURI
+        if Solicit.rootURI in solicit: rootURI = solicit.rootURI
         else: rootURI = None
+        if Solicit.replacements in solicit: replacements = solicit.replacements
+        else: replacements = None
         
-        gateways = self.iterateGateways(reply.permissions, rootURI)
-        if reply.gateways is not None: reply.gateways = itertools.chain(reply.gateways, gateways)
-        else: reply.gateways = gateways
+        gateways = self.iterateGateways(solicit.permissions, rootURI, replacements)
+        if solicit.gateways is not None: solicit.gateways = itertools.chain(solicit.gateways, gateways)
+        else: solicit.gateways = gateways
         
     # ----------------------------------------------------------------
     
-    def iterateGateways(self, permissions, rootURI=None):
+    def iterateGateways(self, permissions, rootURI=None, replacements=None):
         '''
         Iterate the gateways for permissions.
         '''
@@ -133,6 +136,7 @@ class RegisterPermissionGatewayHandler(HandlerProcessor):
                     for path in sorted(filtersEntry[position]):
                         if gateway.Filters is None: gateway.Filters = []
                         assert isinstance(path, str), 'Invalid path %s' % path
+                        if replacements: path = path % replacements
                         if rootURI: path = '%s/%s' % (rootURI, path)
                         gateway.Filters.append('%s:%s' % (position, path))
                         
@@ -141,7 +145,9 @@ class RegisterPermissionGatewayHandler(HandlerProcessor):
                 for name in sorted(filtersProperty):
                     paths = sorted(filtersProperty[name])
                     if rootURI:
-                        for k, path in enumerate(paths): paths[k] = '%s/%s' % (rootURI, path)
+                        for k, path in enumerate(paths): 
+                            if replacements: path = path % replacements
+                            paths[k] = '%s/%s' % (rootURI, path)
                     values.append('%s=%s' % (name, '|'.join(paths)))
                 if gateway.PutHeaders is None: gateway.PutHeaders = {}
                 gateway.PutHeaders[HEADER_FILTER_INPUT] = ';'.join(values)

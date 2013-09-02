@@ -34,7 +34,7 @@ SERVICES = 'gateway.api.**.I*Service'
 
 bind.bindToEntities('gateway.impl.**.*Alchemy', 'gateway.core.impl.**.*Alchemy', binders=binders)
 support.createEntitySetup('gateway.impl.**.*', 'gateway.core.impl.**.*')
-support.listenToEntities(SERVICES, listeners=registerService, beforeBinding=False)
+support.listenToEntities(SERVICES, listeners=registerService)
 support.loadAllEntities(SERVICES)
 
 # --------------------------------------------------------------------

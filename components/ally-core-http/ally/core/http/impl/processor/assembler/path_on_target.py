@@ -13,7 +13,7 @@ from ally.api.operator.type import TypeModel
 from ally.design.processor.attribute import requires, defines
 from ally.design.processor.context import Context
 from ally.design.processor.handler import HandlerProcessor
-from ally.http.spec.server import HTTP_POST, HTTP_GET
+from ally.http.spec.server import HTTP_POST, HTTP_GET, HTTP_PUT
 
 # --------------------------------------------------------------------
 
@@ -78,9 +78,23 @@ class PathTargetHandler(HandlerProcessor):
                                 break
                     continue
                 
+            elif invoker.methodHTTP == HTTP_PUT:
+                if invoker.target is not None:
+                    assert isinstance(invoker.target, TypeModel), 'Invalid target %s' % invoker.target
+                    
+                    for el in invoker.path:
+                        assert isinstance(el, ElementTarget), 'Invalid element %s' % el
+                        if el.model == invoker.target: break
+                    else:
+                        for el in reversed(invoker.path):
+                            if el.name:
+                                el.name = '%s%s' % (el.name, invoker.target.name)
+                                break
+                continue
+            
             elif invoker.methodHTTP != HTTP_POST: continue
             assert isinstance(invoker.target, TypeModel), 'Invalid target %s' % invoker.target
             
             if invoker.path is None: invoker.path = []
             invoker.path.append(Element(name=invoker.target.name, model=invoker.target))
-            
+                

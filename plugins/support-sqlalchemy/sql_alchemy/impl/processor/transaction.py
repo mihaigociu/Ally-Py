@@ -11,7 +11,7 @@ Provides a SQL alchemy transaction handling, this processor can be generally use
 
 from ally.design.processor.execution import Chain
 from ally.design.processor.handler import HandlerProcessor
-from ally.support.sqlalchemy.session import rollback, commit, setKeepAlive, \
+from sql_alchemy.support.session import rollback, commit, setKeepAlive, \
     endSessions
 
 # --------------------------------------------------------------------

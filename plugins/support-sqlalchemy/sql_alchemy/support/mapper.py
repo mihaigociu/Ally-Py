@@ -9,6 +9,7 @@ Created on Jan 4, 2012
 Provides support for SQL alchemy mapper that is able to link the alchemy with REST models.
 '''
 
+from .session import openSession
 from abc import ABCMeta
 from ally.api.operator.descriptor import Reference
 from ally.api.operator.type import TypeModel, typePropFor
@@ -16,7 +17,6 @@ from ally.api.type import typeFor
 from ally.container.binder_op import INDEX_PROP
 from ally.container.impl.binder import indexAfter
 from ally.internationalization import _
-from ally.support.sqlalchemy.session import openSession
 from functools import partial
 from inspect import isclass
 from sqlalchemy import event
@@ -266,7 +266,8 @@ def tableFor(mapped):
     '''
     if isinstance(mapped, InstrumentedAttribute):
         assert isinstance(mapped, InstrumentedAttribute)
-        return mapped.parent.mapped_table
+        assert len(mapped.property.columns) == 1, 'To many columns found for %s' % mapped
+        return mapped.property.columns[0].table
     assert isinstance(mapped, DeclarativeMetaModel), 'Invalid mapped object %s' % mapped
     return mapped.__table__
 

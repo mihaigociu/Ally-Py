@@ -9,7 +9,7 @@ Created on Aug 12, 2013
 Indexes the filters invokers.
 '''
 
-from acl.api.filter import IFilterService, FilterCreate, Filter, generateHash
+from acl.api.filter import IFilterService, Filter
 from acl.core.spec import uniqueNameFor
 from ally.api.operator.type import TypeProperty
 from ally.container import wire
@@ -96,32 +96,30 @@ class IndexFilterHandler(HandlerProcessor):
         
         filters = []
         for invoker in invokersFilters:
-            filtre = FilterCreate()
-            filtre.Name = invoker.filterName
+            filtre = Filter()
             filters.append(filtre)
-            position, items = 1, []
+            filtre.Name = invoker.filterName
+            
+            items = []
             for el in invoker.path:
                 assert isinstance(el, Element), 'Invalid element %s' % el
                 if el.property:
-                    if filtre.Types is None: filtre.Types = {}
                     if Invoker.filterInjected in invoker and invoker.filterInjected and el in invoker.filterInjected:
-                        filtre.Types[position] = invoker.filterInjected[el]
+                        items.append(invoker.filterInjected[el])
                     else:
-                        filtre.Types[position] = uniqueNameFor(el.property)
-                        
-                        if filtre.Target is not None:
+                        if filtre.Type is not None:
                             log.error('Cannot use filter invoker because there are to many possible targets, at:%s',
                                       invoker.location)
                             aborted.append(invoker)
                             break
-                        filtre.Target = position
-                    items.append('*')
+                        filtre.Type = uniqueNameFor(el.property)
+                        items.append('*')
                 else:
                     assert isinstance(el.name, str), 'Invalid element name %s' % el.name
                     items.append(el.name)
             else:
                 filtre.Path = '/'.join(items)
-                if filtre.Target is None:
+                if filtre.Type is None:
                     log.error('Cannot use filter invoker because there is no target, at:%s', invoker.location)
                     aborted.append(invoker)
             
@@ -136,13 +134,13 @@ class IndexFilterHandler(HandlerProcessor):
         Persist the filter.
         '''
         for filtre in filters:
-            assert isinstance(filtre, FilterCreate), 'Invalid filter %s' % filtre
+            assert isinstance(filtre, Filter), 'Invalid filter %s' % filtre
         
             try: present = self.filterService.getById(filtre.Name)
             except: assert log.debug('There is no filter for \'%s\'', filtre.Name) or True
             else:
                 assert isinstance(present, Filter), 'Invalid filter %s' % present
-                if present.Hash == generateHash(filtre): continue
+                if present.Type == filtre.Type: continue
                 log.info('Removing filter %s since is not compatible with the current structure', present)
                 self.filterService.delete(filtre.Name)
             

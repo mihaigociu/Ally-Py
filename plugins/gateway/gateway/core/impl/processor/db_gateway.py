@@ -10,18 +10,18 @@ Processor that adds Gateway objects based on database GatewayData.
 '''
 
 from ally.container import wire
+from ally.container.ioc import injected
 from ally.container.support import setup
 from ally.design.processor.attribute import defines
 from ally.design.processor.context import Context
 from ally.design.processor.handler import HandlerProcessor, Handler
 from ally.support.api.util_service import copyContainer
-from ally.support.sqlalchemy.session import SessionSupport
 from collections import Iterable
 from gateway.api.gateway import Gateway
 from gateway.meta.gateway import GatewayData
+from sql_alchemy.support.util_service import SessionSupport
 import itertools
 import json
-from ally.container.ioc import injected
 
 # --------------------------------------------------------------------
 
@@ -50,9 +50,9 @@ class DatabaseGatewayProviderAlchemy(SessionSupport):
 
 # --------------------------------------------------------------------
 
-class Reply(Context):
+class Solicit(Context):
     '''
-    The reply context.
+    The solicit context.
     '''
     # ---------------------------------------------------------------- Defined
     gateways = defines(Iterable, doc='''
@@ -76,14 +76,14 @@ class RegisterDatabaseGatewayHandler(HandlerProcessor):
         'Invalid database gateway provider %s' % self.databaseGatewayProvider
         super().__init__()
     
-    def process(self, chain, reply:Reply, **keyargs):
+    def process(self, chain, solicit:Solicit, **keyargs):
         '''
         @see: HandlerProcessor.process
         
         Adds the databse gateways.
         '''
-        assert isinstance(reply, Reply), 'Invalid reply %s' % reply
+        assert isinstance(solicit, Solicit), 'Invalid solicit %s' % solicit
         
         gateways = self.databaseGatewayProvider.iterateGateways()
-        if reply.gateways is not None: reply.gateways = itertools.chain(reply.gateways, gateways)
-        else: reply.gateways = gateways
+        if solicit.gateways is not None: solicit.gateways = itertools.chain(solicit.gateways, gateways)
+        else: solicit.gateways = gateways

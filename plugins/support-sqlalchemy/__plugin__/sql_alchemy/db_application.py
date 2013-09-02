@@ -10,9 +10,9 @@ Provides the database settings for the application database.
 '''
 
 from ally.container import ioc, support
-from ally.support.sqlalchemy.session import bindSession
 from sql_alchemy import database_config
 from sql_alchemy.database_config import alchemySessionCreator, metas
+from sql_alchemy.support.session import bindSession
 
 # --------------------------------------------------------------------
 

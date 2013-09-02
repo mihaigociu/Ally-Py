@@ -10,7 +10,7 @@ API specifications for access group.
 '''
 
 from .domain_acl import modelACL
-from acl.core.api.acl import IACLPrototype
+from acl.core.api.acl import IAclPrototype
 from ally.api.config import service, query
 from ally.api.option import SliceAndTotal  # @UnusedImport
 from ally.support.api.entity_named import Entity, IEntityService, QEntity
@@ -41,7 +41,7 @@ class QGroup(QEntity):
 # --------------------------------------------------------------------
 
 @service((Entity, Group), (QEntity, QGroup), ('ACL', Group))
-class IGroupService(IEntityService, IACLPrototype):
+class IGroupService(IEntityService, IAclPrototype):
     '''
     The ACL access group service used for allowing accesses based on group.
     '''

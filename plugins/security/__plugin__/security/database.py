@@ -9,6 +9,7 @@ Created on Jan 17, 2012
 Provides the database settings.
 '''
 
+from ..gateway_acl.database import updateMetasForACL
 from ..sql_alchemy.db_application import metas, bindApplicationSession
 from ally.container import ioc
 from security.meta.metadata_security import meta
@@ -20,5 +21,5 @@ def binders(): return [bindApplicationSession]
 
 # --------------------------------------------------------------------
 
-@ioc.before(metas)
+@ioc.after(updateMetasForACL)
 def updateMetasForSecurity(): metas().append(meta)

@@ -12,6 +12,7 @@ Provides implementations that provide general behavior or functionality.
 from collections import Iterable, Iterator, namedtuple, deque
 from inspect import isclass
 from weakref import WeakKeyDictionary
+import re
 
 # --------------------------------------------------------------------
 
@@ -290,6 +291,33 @@ def firstLastCheck(iterator):
         isFirst = False
 
 # --------------------------------------------------------------------
+
+def modifyFirst(value, upper=False):
+    '''
+    Modifies the first letter to an upper or lower letter.
+    
+    @param value: string
+        The value to convert.
+    @param upper: boolean
+        If true converts the letter to upper, otherwise to a lower one.
+    @return: string
+        The converted value.
+    '''
+    assert isinstance(value, str), 'Invalid value %s' % value
+    assert value, 'At least one letter is required'
+    if upper: return '%s%s' % (value[0].upper(), value[1:])
+    return '%s%s' % (value[0].lower(), value[1:])
+
+def toUnderscore(value):
+    '''
+    Converts from a camel case string to an underscore one.
+    
+    @param value: string
+        The value to convert.
+    @return: string
+        The converted value.
+    '''
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', re.sub('(.)([A-Z][a-z]+)', r'\1_\2', value)).lower()
 
 class TextTable:
     '''

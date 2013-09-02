@@ -21,17 +21,16 @@ from ally.design.processor.context import Context
 from ally.design.processor.execution import Processing, FILL_ALL
 from ally.internationalization import _
 from ally.support.api.util_service import namesFor, copyContainer
-from ally.support.sqlalchemy.session import SessionSupport
-from ally.support.sqlalchemy.util_service import iterateCollection
 from collections import Iterable
+from sql_alchemy.support.util_service import SessionSupport, iterateCollection
 import json
 import re
 
 # --------------------------------------------------------------------
 
-class Reply(Context):
+class Solicit(Context):
     '''
-    The reply context.
+    The solicit context.
     '''
     # ---------------------------------------------------------------- Required
     gateways = requires(Iterable)
@@ -52,7 +51,7 @@ class GatewayServiceAlchemy(IGatewayService, SessionSupport):
         assert isinstance(self.assemblyAnonymousGateways, Assembly), \
         'Invalid assembly gateways %s' % self.assemblyAnonymousGateways
         
-        self._processing = self.assemblyAnonymousGateways.create(reply=Reply)
+        self._processing = self.assemblyAnonymousGateways.create(solicit=Solicit)
          
     def getAnonymous(self):
         '''
@@ -61,10 +60,9 @@ class GatewayServiceAlchemy(IGatewayService, SessionSupport):
         proc = self._processing
         assert isinstance(proc, Processing), 'Invalid processing %s' % proc
         
-        reply = proc.execute(FILL_ALL).reply
-        assert isinstance(reply, Reply), 'Invalid reply %s' % reply
-        if Reply.gateways not in reply: return ()
-        return reply.gateways
+        solicit = proc.execute(FILL_ALL).solicit
+        assert isinstance(solicit, Solicit), 'Invalid solicit %s' % solicit
+        return solicit.gateways or ()
 
     # ----------------------------------------------------------------
     

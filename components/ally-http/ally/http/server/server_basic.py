@@ -27,15 +27,6 @@ log = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------
 
-class Wrap:
-    
-    def __init__(self, wrap):
-        self.wrap = wrap
-    
-    def write(self, data):
-        print(data)
-        #self.wrap.write(data)
-
 class RequestHandler(BaseHTTPRequestHandler):
     '''
     The server class that handles the HTTP requests.

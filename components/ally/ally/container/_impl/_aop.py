@@ -156,7 +156,7 @@ class AOPModules(AOP):
                 try: __import__(path)
                 except:
                     if mandatory: raise
-                    log.warn('Cannot import module %r' % path, exc_info=True)
+                    log.warn('Cannot import module \'%s\'', path, exc_info=True)
                     broken.add(path)
         self._paths = {path:sys.modules[path] for path in self._paths if path not in broken}
         return self

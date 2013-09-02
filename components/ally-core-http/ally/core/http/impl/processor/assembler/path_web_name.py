@@ -9,7 +9,7 @@ Created on May 29, 2013
 Provides the web name for the path.
 '''
 
-from ally.api.type import Call
+from ally.api.operator.type import TypeCall
 from ally.container.ioc import injected
 from ally.design.processor.attribute import requires, defines, definesIf
 from ally.design.processor.context import Context
@@ -42,7 +42,7 @@ class Invoker(Context):
     # ---------------------------------------------------------------- Defined
     path = defines(list)
     # ---------------------------------------------------------------- Required
-    call = requires(Call)
+    call = requires(TypeCall)
     location = requires(str)
     
 class Element(Context):
@@ -89,7 +89,7 @@ class PathWebNameHandler(HandlerProcessor):
             assert isinstance(invoker, Invoker), 'Invalid invoker %s' % invoker
             if not invoker.call: continue  # No call to process hints on.
             if not invoker.path: continue  # No path to append the web name to.
-            assert isinstance(invoker.call, Call), 'Invalid call %s' % invoker.call
+            assert isinstance(invoker.call, TypeCall), 'Invalid call %s' % invoker.call
             if not self.hintName in invoker.call.hints: continue
             
             webName = invoker.call.hints[self.hintName]

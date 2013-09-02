@@ -89,7 +89,8 @@ class GatewayAuthorizedRepositoryHandler(GatewayRepositoryHandler):
                     response.text = error.text
                 return
             assert 'GatewayList' in jobj, 'Invalid objects %s, not GatewayList' % jobj
-            repository = Repository([self.populate(Identifier(Gateway()), obj) for obj in jobj['GatewayList']], Match)
+            repository = Repository(request.clientIP, [self.populate(Identifier(Gateway()), obj)
+                                                       for obj in jobj['GatewayList']], Match)
             self._repositories[authentication] = repository
         self._lastAccess[authentication] = datetime.now()
         

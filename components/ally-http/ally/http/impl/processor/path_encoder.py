@@ -82,9 +82,8 @@ class EncoderPathHandler(HandlerProcessor):
             assert isinstance(path, str), 'Invalid path %s' % path
             url = urlsplit(path)
     
-            if url.scheme: return urlunsplit((url.scheme, url.netloc, url.path, url.query, url.fragment))
-            if url.netloc: return urlunsplit((scheme, url.netloc, url.path, url.query, url.fragment))
-            # We just needed to append the scheme
+            if url.scheme or url.netloc: return urlunsplit((url.scheme, url.netloc, url.path, url.query, url.fragment))
+            # Is a relative URI so we append the scheme and host.
             return urlunsplit((scheme, host, url.path, url.query, url.fragment))
         return doEncodePath
 

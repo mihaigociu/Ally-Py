@@ -34,5 +34,3 @@ class IRightTypeService(IEntityNQPrototype):
     '''
     Right type model service interface
     '''
-
-# --------------------------------------------------------------------

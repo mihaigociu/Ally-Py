@@ -9,8 +9,8 @@ Created on May 2, 2012
 General specifications for the entities API that poses a string Name identifier.
 '''
 
-from .entity import IEntityGetPrototype, IEntityFindPrototype, \
-    IEntityQueryPrototype
+from .entity import IEntityCRUDPrototype, IEntityGetPrototype, \
+    IEntityFindPrototype, IEntityQueryPrototype
 from ally.api.config import model, query, service
     
 # --------------------------------------------------------------------
@@ -51,7 +51,7 @@ class IEntityQueryService(IEntityQueryPrototype):
     '''
 
 @service(('Entity', Entity))
-class IEntityCRUDService:
+class IEntityCRUDService(IEntityCRUDPrototype):
     '''
     Entity Name identifier service for @see: IEntityCRUDService
     '''

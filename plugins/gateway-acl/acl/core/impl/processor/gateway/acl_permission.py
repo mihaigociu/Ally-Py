@@ -20,9 +20,9 @@ import itertools
 
 # --------------------------------------------------------------------
   
-class Reply(Context):
+class Solicit(Context):
     '''
-    The reply context.
+    The solicit context.
     '''
     # ---------------------------------------------------------------- Defined
     permissions = defines(Iterable, doc='''
@@ -30,7 +30,7 @@ class Reply(Context):
     The ACL permissions.
     ''')
     # ---------------------------------------------------------------- Required
-    identifiers = requires(Iterable)
+    acl = requires(object)
 
 class PermissionAcl(Context):
     '''
@@ -63,28 +63,28 @@ class RegisterAclPermissionHandler(HandlerProcessor):
         'Invalid ACL permission provider %s' % self.aclPermissionProvider
         super().__init__()
     
-    def process(self, chain, reply:Reply, Permission:PermissionAcl, **keyargs):
+    def process(self, chain, solicit:Solicit, Permission:PermissionAcl, **keyargs):
         '''
         @see: HandlerProcessor.process
         
         Adds the ACL access permissions.
         '''
-        assert isinstance(reply, Reply), 'Invalid reply %s' % reply
-        if reply.identifiers is None: return
+        assert isinstance(solicit, Solicit), 'Invalid reply %s' % solicit
+        if solicit.acl is None: return
         
-        permissions = self.iteratePermissions(reply.identifiers, Permission)
-        if reply.permissions is not None: reply.permissions = itertools.chain(reply.permissions, permissions)
-        else: reply.permissions = permissions
+        permissions = self.iteratePermissions(solicit.acl, Permission)
+        if solicit.permissions is not None: solicit.permissions = itertools.chain(solicit.permissions, permissions)
+        else: solicit.permissions = permissions
 
     # ----------------------------------------------------------------
     
-    def iteratePermissions(self, identifiers, Permission):
+    def iteratePermissions(self, acl, Permission):
         '''
         Iterate the permissions for the identifiers.
         '''
         assert issubclass(Permission, PermissionAcl), 'Invalid permission class %s' % Permission
         
-        for access, filters in self.aclPermissionProvider.iteratePermissions(identifiers):
+        for access, filters in self.aclPermissionProvider.iteratePermissions(acl):
             assert isinstance(access, Access), 'Invalid access %s' % access
             assert isinstance(filters, dict), 'Invalid filters %s' % filters
             yield Permission(access=access, filters=filters)

@@ -9,16 +9,16 @@ Created on May 17, 2013
 Provides the invokers created based on services.
 '''
 
-from ally.api.operator.type import TypeService
-from ally.api.type import typeFor, Type, Call
+from ally.api.operator.type import TypeService, TypeCall
+from ally.api.type import typeFor, Type
 from ally.design.processor.attribute import requires, defines
 from ally.design.processor.context import Context
 from ally.design.processor.handler import HandlerProcessor
-from ally.support.api.util_service import iterateCalls
+from ally.support.api.util_service import iterateInputs
+from ally.support.util_context import attributesOf, hasAttribute
 from ally.support.util_spec import IDo
 from ally.support.util_sys import locationStack
 from collections import Iterable
-from ally.support.util_context import attributesOf, hasAttribute
 
 # --------------------------------------------------------------------
 
@@ -53,8 +53,8 @@ class InvokerCall(Context):
     @rtype: TypeService
     The invoker service.
     ''')
-    call = defines(Call, doc='''
-    @rtype: Call
+    call = defines(TypeCall, doc='''
+    @rtype: TypeCall
     The call of the invoker.
     ''')
     method = defines(int, doc='''
@@ -100,8 +100,8 @@ class InvokerServiceHandler(HandlerProcessor):
             service = typeFor(implementation)
             assert isinstance(service, TypeService), 'Invalid service implementation %s' % implementation
 
-            for call in iterateCalls(service):
-                assert isinstance(call, Call), 'Invalid call %s' % call
+            for call in service.calls.values():
+                assert isinstance(call, TypeCall), 'Invalid call %s' % call
                 
                 invokerId = '%s.%s.%s' % (service.clazz.__module__, service.clazz.__name__, call.name)
                 if invokerId in register.exclude: continue
@@ -112,9 +112,11 @@ class InvokerServiceHandler(HandlerProcessor):
                 invoker.service = service
                 invoker.call = call
                 invoker.method = call.method
-                invoker.inputs = call.inputs
+                invoker.inputs = tuple(iterateInputs(call))
                 invoker.output = call.output
                 invoker.location = locationStack(getattr(service.clazz, call.name))
+                if call.definer.__module__ != service.clazz.__module__ or call.definer.__name__ != service.clazz.__name__:
+                    invoker.location = '%s\n,inherited from %s' % (locationStack(service.clazz), invoker.location)
                 invoker.doInvoke = getattr(implementation, call.name)
                 register.invokers.append(invoker)
         

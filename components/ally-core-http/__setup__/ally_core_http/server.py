@@ -31,14 +31,14 @@ def server_provide_errors() -> bool:
 @ioc.config
 def root_uri_resources():
     '''
-    The pattern used for matching the resources paths in HTTP URL's
+    The prefix used for matching the resources paths in HTTP URL's
     '''
     return 'resources'
 
 @ioc.config
 def root_uri_errors():
     '''
-    The pattern used for matching the errors paths in HTTP URL's
+    The prefix used for matching the errors paths in HTTP URL's
     '''
     return 'error'
 

@@ -19,7 +19,7 @@ import abc # @UnusedImport
 
 # --------------------------------------------------------------------
 
-class IACLPrototype(metaclass=abc.ABCMeta):
+class IAclPrototype(metaclass=abc.ABCMeta):
     '''
     The ACL access prototype service used for allowing accesses based on other entities.
     '''

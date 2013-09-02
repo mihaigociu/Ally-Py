@@ -13,16 +13,15 @@ from ..spec import IAclPermissionProvider
 from acl.api.access import Access, Entry, Property
 from acl.api.filter import Filter
 from acl.meta.access import EntryMapped, PropertyMapped, AccessMapped
-from acl.meta.acl import AclAccessDefinition
+from acl.meta.acl import WithAclAccess
 from acl.meta.acl_intern import Path
-from acl.meta.filter import FilterMapped, FilterEntryMapped
+from acl.meta.filter import FilterMapped
 from ally.api.error import IdError, InputError
 from ally.api.type import typeFor
 from ally.internationalization import _
 from ally.support.api.util_service import modelId
-from ally.support.sqlalchemy.mapper import MappedSupport, mappingFor
-from ally.support.sqlalchemy.session import SessionSupport
-from ally.support.sqlalchemy.util_service import iterateCollection
+from sql_alchemy.support.mapper import MappedSupport, mappingFor
+from sql_alchemy.support.util_service import SessionSupport, iterateCollection
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.util import aliased
 from sqlalchemy.sql.expression import distinct
@@ -46,7 +45,7 @@ class AclServiceAlchemy(SessionSupport, IAclPermissionProvider):
             The ACL mapped class that organizes the ACL structure.
         '''
         assert isinstance(Acl, MappedSupport), 'Invalid mapped class %s' % Acl
-        assert issubclass(AclAccess, AclAccessDefinition), 'Invalid acl access class %s' % AclAccess
+        assert issubclass(AclAccess, WithAclAccess), 'Invalid acl access class %s' % AclAccess
         pks = [pk for pk in mappingFor(Acl).columns if pk.primary_key]
         assert pks, 'Cannot detect any primary key for %s' % Acl
         assert not len(pks) > 1, 'To many primary keys %s for %s' % (pks, Acl)
@@ -183,9 +182,7 @@ class AclServiceAlchemy(SessionSupport, IAclPermissionProvider):
         sql = self.session().query(EntryMapped.id)
         sql = sql.filter(EntryMapped.accessId == accessId).filter(EntryMapped.Position == entryPosition)
         sql = sql.filter(EntryMapped.typeId == targetTypeId)
-        
         if not sql.count(): raise InputError(_('Invalid filter for entry position'))
-        if not self.validateFilter(filterId): raise InputError(_('Filter is not valid'))
         
         self.assignEntryFilter(accessId, identifier, entryPosition, filterId)
         
@@ -218,9 +215,7 @@ class AclServiceAlchemy(SessionSupport, IAclPermissionProvider):
         sql = self.session().query(PropertyMapped.id)
         sql = sql.filter(PropertyMapped.accessId == accessId).filter(PropertyMapped.Name == propertyName)
         sql = sql.filter(PropertyMapped.typeId == targetTypeId)
-
         if not sql.count(): raise InputError(_('Invalid filter for property name'))
-        if not self.validateFilter(filterId): raise InputError(_('Filter is not valid'))
         
         self.assignPropertyFilter(accessId, identifier, propertyName, filterId)
         
@@ -254,8 +249,6 @@ class AclServiceAlchemy(SessionSupport, IAclPermissionProvider):
         assert isinstance(access, AccessMapped), 'Invalid access %s' % access
 
         filterId, targetTypeId = self.filterObtain(filterName)
-        if not self.validateFilter(filterId): return False
-        
         sql = self.session().query(EntryMapped)
         sql = sql.filter(EntryMapped.accessId == accessId)
         entries = {entry.Position: entry for entry in sql.all()}
@@ -312,7 +305,7 @@ class AclServiceAlchemy(SessionSupport, IAclPermissionProvider):
     
     # --------------------------------------------------------------------
     
-    def iteratePermissions(self, identifiers):
+    def iteratePermissions(self, acl):
         '''
         @see: IACLPermissionProvider.iteratePermissions
         '''
@@ -323,7 +316,7 @@ class AclServiceAlchemy(SessionSupport, IAclPermissionProvider):
         sql = sql.outerjoin(FilterMapped, (self.EntryFilter.filterId == FilterMapped.id) | 
                                           (self.PropertyFilter.filterId == FilterMapped.id))
         sql = sql.outerjoin(PathFilter, FilterMapped.pathId == PathFilter.id)
-        sql = sql.filter(self.AclIdentifier.in_(identifiers)).order_by(Path.priority, self.AclAccess.accessId)
+        sql = sql.filter(self.AclIdentifier.in_(acl)).order_by(Path.priority, Path.path, self.AclAccess.accessId)
         
         current, filters = None, None
         for access, identifier, filterPath, entryPosition, propertyName in sql.yield_per(10):
@@ -381,24 +374,10 @@ class AclServiceAlchemy(SessionSupport, IAclPermissionProvider):
         '''
         assert isinstance(filterName, str), 'Invalid filter name %s' % filterName
         
-        sql = self.session().query(FilterMapped.id, FilterEntryMapped.typeId).join(FilterEntryMapped)
-        sql = sql.filter(FilterMapped.Target == FilterEntryMapped.Position)
+        sql = self.session().query(FilterMapped.id, FilterMapped.typeId)
         sql = sql.filter(FilterMapped.Name == filterName)
-        try: filterId, targetTypeId = sql.one()
+        try: return sql.one()
         except NoResultFound: raise IdError(Filter)
-        
-        return filterId, targetTypeId
-    
-    def validateFilter(self, filterId):
-        '''
-        Validates the provided filter id.
-        
-        @param filterId: boolean
-            The filter id to validate.
-        @return: boolean
-            True if the filter can be assigned, False otherwise.
-        '''
-        return True
     
     def assignEntryFilter(self, accessId, identifier, entryPosition, filterId):
         '''

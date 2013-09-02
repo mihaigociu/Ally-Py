@@ -120,8 +120,9 @@ class URIHandler(HandlerProcessor):
             if node.childByName:
                 if path not in node.childByName:
                     PATH_NOT_FOUND.set(response)
-                    addError(response, 'Instead of \'%(item)s\' or before it is expected one of: %(names)s',
-                             item=path, names=sorted(node.childByName))
+                    addError(response, 'Instead of \'%(item)s\' or before it is expected, maybe you meant: %(paths)s',
+                             item=path, paths=['%s/%s/%s' % ('/'.join(paths[:k]), item, '/'.join(paths[k:]))
+                                               for item in sorted(node.childByName)])
                     return
                 node = node.childByName[path]
                 continue
@@ -140,8 +141,9 @@ class URIHandler(HandlerProcessor):
         if not node.invokers:
             PATH_NOT_FOUND.set(response)
             if node.childByName:
-                addError(response, 'Expected additional path items, one of: %(names)s', names=sorted(node.childByName))
-            else: addError(response, 'Expected additional path items')
+                addError(response, 'Expected additional path items, maybe you meant: %(paths)s',
+                         paths=['%s/%s' % ('/'.join(paths), item) for item in sorted(node.childByName)])
+            else: addError(response, 'Expected a value path item')
             return
         
         if not clearExtension and node.hasMandatorySlash:

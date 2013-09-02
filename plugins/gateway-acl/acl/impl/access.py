@@ -10,18 +10,17 @@ Implementation for the ACL access.
 '''
 
 from ..api.access import IAccessService, AccessCreate, generateId, QAccess
-from ..core.impl.acl_intern import pathId
 from ..meta.access import AccessMapped, EntryMapped, PropertyMapped
 from ..meta.acl_intern import Path, Method
 from acl.api.access import generateHash
-from acl.core.impl.acl_intern import methodId, typeId
 from ally.api.error import InputError
 from ally.container.ioc import injected
 from ally.container.support import setup
 from ally.internationalization import _
-from ally.support.sqlalchemy.util_service import deleteModel, iterateCollection
 from sql_alchemy.impl.entity import EntityGetServiceAlchemy, \
     EntityQueryServiceAlchemy, EntitySupportAlchemy
+from sql_alchemy.support.util_service import deleteModel, iterateCollection, \
+    insertModel
     
 # --------------------------------------------------------------------
 
@@ -77,16 +76,10 @@ class AccessServiceAlchemy(EntityGetServiceAlchemy, EntityQueryServiceAlchemy, I
         '''
         assert isinstance(access, AccessCreate), 'Invalid access %s' % access
 
-        dbAccess = AccessMapped()
-        items, dbAccess.pathId = pathId(access.Path)
-        dbAccess.methodId = methodId(access.Method)
-        dbAccess.Id = generateId(access.Path, access.Method)
-        dbAccess.Shadowing = access.Shadowing
-        dbAccess.Shadowed = access.Shadowed
-        dbAccess.Hash = generateHash(access)
-        self.session().add(dbAccess)
+        dbAccess = insertModel(AccessMapped, access, Id=generateId(access.Path, access.Method), Hash=generateHash(access))
+        assert isinstance(dbAccess, AccessMapped), 'Invalid mapped access %s' % dbAccess
         
-        self.generateEntries(access, dbAccess.Id, items)
+        self.generateEntries(access, dbAccess.Id, dbAccess.Path.split('/'))
         self.generateProperties(access, dbAccess.Id)
 
         return access.Id
@@ -164,7 +157,7 @@ class AccessServiceAlchemy(EntityGetServiceAlchemy, EntityQueryServiceAlchemy, I
                     raise InputError(_('Expected a type for * at %(position)i'), AccessCreate.Types, position=position)
                 typeName = access.Types[position]
             
-            entry.typeId = typeId(typeName)
+            entry.Type = typeName
             self.session().add(entry)
             position += 1
 
@@ -188,15 +181,5 @@ class AccessServiceAlchemy(EntityGetServiceAlchemy, EntityQueryServiceAlchemy, I
             prop = PropertyMapped()
             prop.Name = name
             prop.accessId = accessId
-            prop.typeId = typeId(typeName)
+            prop.Type = typeName
             self.session().add(prop)
-    
-    # TODO: remove    
-    def isDummy1Filter(self, id):
-        print('1Filter:', id)
-        return False
-    
-    # TODO: remove    
-    def isDummy2Filter(self, id):
-        print('2Filter:', id)
-        return True
