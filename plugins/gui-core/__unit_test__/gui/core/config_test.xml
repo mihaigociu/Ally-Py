@@ -7,7 +7,7 @@
 			</Action>				
 		</Action>
 		<Action path="mucu" label="Mucu" parent="menu" />
-		<Action path="cucu" label="Mucu" parent="menu" /
+		<Action path="cucu" label="Mucu" parent="menu" />
 
 		<Access methods="PUT,DELETE" filter="FilterDummy, Authent, lala">
 			<Method>GET</Method>
